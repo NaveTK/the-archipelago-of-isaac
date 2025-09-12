@@ -11,4 +11,4 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 ## Usage Guidelines
 - Only compatible with all DLCs for The Binding of Isaac: Rebirth up to Repentance.
 - Requires a savefile which has all paths to the lategame bosses unlocked already.
-- As network capabilities are blocked by default. This mod requires the `--luadbg` flag to be set as a start option for The Binding of Isaac on Steam
+- As network capabilities are blocked by default. This mod requires the `--luadebug` flag to be set as a start option for The Binding of Isaac on Steam
