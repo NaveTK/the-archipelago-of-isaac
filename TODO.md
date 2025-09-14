@@ -17,6 +17,7 @@
 - [ ] Fortune hint options for Progressive/Usefull only
 - [ ] Fortune hint option for hint percentage instead of 100%
 - [ ] Fortune hints on Fortune Cookie / Crystal ball
+- [ ] No Mausoleum for Ascend required but put Mausoleum in-logic after Home + Polaroid/Negative unlocks
 
 ## Bugs
 - [x] ~~Generation sometimes fails~~
