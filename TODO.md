@@ -15,7 +15,7 @@
 - [ ] Instead of X AP items, spread them over different Acts so they can have progression items and work with spheres
 
 ## Bugs
-- [x] Generation sometimes fails
+- [x] ~~Generation sometimes fails~~
 - [ ] Key pieces still spawn for Angels in Sacrificr room
 - [ ] Victory runs shouldn't count
 - [ ] Death link is always on regardless of settings
