@@ -13,6 +13,7 @@
 - [ ] Refactor "win collects missed locations" to only consider rooms that didn't spawn, not those skipped on purpose, also make an option to have it only collect a set amount, not all
 - [ ] Merge with limeslime secret-based system for asyncs
 - [ ] Instead of X AP items, spread them over different Acts so they can have progression items and work with spheres
+- [ ] Merge Mirrorworld and Escape unlocks
 
 ## Bugs
 - [x] ~~Generation sometimes fails~~
