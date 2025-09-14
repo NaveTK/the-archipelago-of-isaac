@@ -14,6 +14,9 @@
 - [ ] Merge with limeslime secret-based system for asyncs
 - [ ] Instead of X AP items, spread them over different Acts so they can have progression items and work with spheres
 - [ ] Merge Mirrorworld and Escape unlocks
+- [ ] Fortune hint options for Progressive/Usefull only
+- [ ] Fortune hint option for hint percentage instead of 100%
+- [ ] Fortune hints on Fortune Cookie / Crystal ball
 
 ## Bugs
 - [x] ~~Generation sometimes fails~~
