@@ -12,6 +12,7 @@
 - [ ] Put Chest/Dark room in-logic with Undefined unlocked
 - [ ] Refactor "win collects missed locations" to only consider rooms that didn't spawn, not those skipped on purpose, also make an option to have it only collect a set amount, not all
 - [ ] Merge with limeslime secret-based system for asyncs
+- [ ] Instead of X AP items, spread them over different Acts so they can have progression items and work with spheres
 
 ## Bugs
 - [ ] Generation sometimes fails
@@ -22,3 +23,4 @@
 - [ ] Dice room rerolls may delete your items
 - [ ] Using Glowing Hourglass on Lilith sometimes deletes your Incubus (not sure if this has something to do with the mod or if it is a vanilla Isaac bug)
 - [ ] Lost soul sometimes gives rewards even if it died last floor
+- [ ] Modeling Clay crashes game
