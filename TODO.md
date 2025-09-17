@@ -31,3 +31,4 @@
 - [ ] Lost soul sometimes gives rewards even if it died last floor
 - [ ] Modeling Clay crashes game
 - [ ] XL floors may mess up progression locks
+- [ ] Boss rush does not get checked properly on Mausoleum
