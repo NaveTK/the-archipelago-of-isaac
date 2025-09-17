@@ -18,6 +18,7 @@
 - [ ] Fortune hint option for hint percentage instead of 100%
 - [ ] Fortune hints on Fortune Cookie / Crystal ball
 - [ ] No Mausoleum for Ascend required but put Mausoleum in-logic after Home + Polaroid/Negative unlocks
+- [ ] Option to exclude TM-Trainer and Missing No. as AP rewards
 
 ## Bugs
 - [x] ~~Generation sometimes fails~~
@@ -29,3 +30,4 @@
 - [ ] Using Glowing Hourglass on Lilith sometimes deletes your Incubus (not sure if this has something to do with the mod or if it is a vanilla Isaac bug)
 - [ ] Lost soul sometimes gives rewards even if it died last floor
 - [ ] Modeling Clay crashes game
+- [ ] XL floors may mess up progression locks
