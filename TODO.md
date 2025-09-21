@@ -29,6 +29,7 @@
 - [ ] Dice room rerolls may delete your items
 - [ ] Using Glowing Hourglass on Lilith sometimes deletes your Incubus (not sure if this has something to do with the mod or if it is a vanilla Isaac bug)
 - [ ] Lost soul sometimes gives rewards even if it died last floor
+- [ ] Found soul dying triggers death link (lol)
 - [ ] Modeling Clay crashes game
 - [ ] XL floors may mess up progression locks
 - [ ] Boss rush does not get checked properly on Mausoleum
