@@ -40,7 +40,7 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 
 ### Bugs
 - [x] ~~Generation sometimes fails~~
-- [ ] Key pieces still spawn for Angels in Sacrificr room
+- [ ] Key pieces still spawn for Angels in Sacrifice room without Mega Satan unlock
 - [ ] Victory runs shouldn't count
 - [ ] Death link is always on regardless of settings
 - [ ] Black candle doesn't block curse traps
