@@ -51,5 +51,5 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Found soul dying triggers death link (lol)
 - [ ] Modeling Clay crashes game
 - [ ] XL floors may mess up progression locks
-- [ ] Boss rush does not get checked properly on Mausoleum
+- [ ] Boss rush and other Boss room locations do not get checked properly
 - [ ] Scatter items option isn't respected properly
