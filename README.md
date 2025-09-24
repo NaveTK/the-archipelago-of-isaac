@@ -53,3 +53,4 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] XL floors may mess up progression locks
 - [ ] Boss rush and other Boss room locations do not get checked properly
 - [ ] Scatter items option isn't respected properly
+- [ ] Binge eater / Glitched crown / Soul of Isaac / Tainted Isaac / Birthrights (Isaac) may show items from wrong item pools
