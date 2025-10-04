@@ -1,13 +1,21 @@
 local DEBUG = true
 
+---@class ModReference
+---@field client_manager ClientManager
 local mod = RegisterMod('The Archipelago of Isaac', 1)
+
+mod.client_manager = include('clientmanager')
+mod.client_manager.Init(mod)
+
+function mod:dbg(str)
+    if DEBUG then
+        Isaac.DebugString(str)
+    end
+end
+
+--[=[
 local json = require('json')
 require('utils')
-
-local luaapclient_dir = debug.getinfo(1).source:match('@?(.*/)') .. 'lib' .. package.config:sub(1,1) .. 'lua-apclientpp.dll'
----@type APClient
-local AP = package.loadlib(luaapclient_dir, 'luaopen_apclientpp')()
-
 local game_name = 'The Binding of Isaac Repentance'
 local items_handling = 7
 local client_version = {0, 5, 3}
@@ -35,12 +43,6 @@ if mod:HasData() then
     local ok, data = pcall(json.decode, mod:LoadData())
     if ok and type(data) == 'table' then
         cfg = data
-    end
-end
-
-function mod:dbg(str)
-    if DEBUG then
-        Isaac.DebugString(str)
     end
 end
 
@@ -1395,3 +1397,4 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, mod.connectionMenu)
 mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, mod.backToMenu)
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, mod.onItemUse)
 mod:AddCallback(ModCallbacks.MC_PRE_PLAYER_COLLISION, mod.onFortuneTellingMachine)
+]=]
