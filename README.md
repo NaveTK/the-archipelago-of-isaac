@@ -42,7 +42,7 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [x] ~~Generation sometimes fails~~
 - [ ] Key pieces still spawn for Angels in Sacrifice room without Mega Satan unlock
 - [ ] Victory runs shouldn't count
-- [ ] Death link is always on regardless of settings
+- [x] ~~Death link is always on regardless of settings~~
 - [ ] Black candle doesn't block curse traps
 - [ ] Item previews indicate wrong items (Guppy's eye, Crane game)
 - [ ] Dice room rerolls may delete your items
@@ -52,5 +52,5 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Modeling Clay crashes game
 - [ ] XL floors may mess up progression locks
 - [ ] Boss rush and other Boss room locations do not get checked properly
-- [ ] Scatter items option isn't respected properly
+- [x] ~~Scatter items option isn't respected properly~~
 - [ ] Binge eater / Glitched crown / Soul of Isaac / Tainted Isaac / Birthrights (Isaac) may show items from wrong item pools
