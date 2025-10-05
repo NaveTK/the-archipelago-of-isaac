@@ -105,7 +105,7 @@ function connect(server, slot, password)
                   ' playing ' .. ap:get_player_game(player.slot))
         end
 
-        if options and options['deathlink'] then
+        if options and options['deathlink'] == 1 then
             ap:ConnectUpdate(items_handling, {'Lua-APClientPP', 'DeathLink'})
         end
 
@@ -497,7 +497,7 @@ function mod:initNewRun()
     mod:dbg('Init New Run!')
     runInfo['received_items'] = {}
     if availableItems then
-        if options and options['scatter_previous_items'] then
+        if options and options['scatter_previous_items'] == 1 then
             mod:dbg('Scatter items.')
             mod:dbg('Amount of available item categories: ' .. #availableItems)
             for item, amount in pairs(availableItems) do
@@ -546,7 +546,7 @@ function mod:initNewRun()
                     end
                 end
             end
-        elseif options and not options['scatter_previous_items'] then
+        elseif options and options['scatter_previous_items'] == 0 then
             for item, amount in pairs(availableItems) do
                 if not item:find('^Unlock') and item ~= 'Victory Condition' and not item:find('Trap') then
                     local reduce = 0
@@ -884,7 +884,7 @@ function mod:roomCleared()
     if Game():GetRoom():GetType() == RoomType.ROOM_BOSSRUSH then
         local boss = boss_rewards[-1]
         if boss then
-            if options and options['additional_boss_rewards'] then
+            if options and options['additional_boss_rewards'] == 1 then
                 for i = 1, boss['rewards'] do
                     ap:LocationChecks({ap:get_location_id(boss['name'] .. ' Reward #' .. tostring(i))})
                 end
@@ -1239,7 +1239,7 @@ function mod:finishedRun(lost)
     runFinished = true
     runInfo['is_active'] = false
     ap:Set(cfg.slot .. '_run_info', {}, false, { {'replace', runInfo}})
-    if not lost and options and options['win_collects_missed_locations'] and runInfo and runInfo['visited_stages'] then
+    if not lost and options and options['win_collects_missed_locations'] == 1 and runInfo and runInfo['visited_stages'] then
         local locationsToCheck = {}
         for _, visitedStage in ipairs(runInfo['visited_stages']) do
             for _, roomName in pairs(roomNames) do
@@ -1277,7 +1277,7 @@ function mod:onEntityKill(entity, entity_type)
     if entity and entity:IsBoss() then
         mod:dbg('Entity Type: ' .. entity.Type .. ' Variant: ' .. entity.Variant .. ' SubType: ' .. entity.SubType)
     end
-    if player and options and options['deathlink'] and not player:WillPlayerRevive() then
+    if player and options and options['deathlink'] == 1 and not player:WillPlayerRevive() then
         local time = ap:get_server_time()
         local cause = ap:get_player_alias(ap:get_player_number()) .. ' died to Skill Issue.'
         local source = ap:get_player_alias(ap:get_player_number())
@@ -1305,7 +1305,7 @@ function mod:onEntityKill(entity, entity_type)
         return
     end
     if boss then
-        if options and options['additional_boss_rewards'] then
+        if options and options['additional_boss_rewards'] == 1 then
             for i = 1, boss['rewards'] do
                 local location_id = ap:get_location_id(boss['name'] .. ' Reward #' .. tostring(i))
                 ap:LocationChecks({location_id})
