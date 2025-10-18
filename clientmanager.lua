@@ -13,6 +13,7 @@
 ---@field received_items table<string, integer>
 ---@field to_be_distributed table<integer, table<string, integer>>
 ---@field unspawned_locations table<string, string[]>
+---@field discarded_items table<string, integer>
 
 ---@class Slot
 ---@field name string
@@ -26,8 +27,8 @@
 ---@field retain_one_ups_percentage integer
 ---@field retain_items_percentage integer
 ---@field retain_junk_percentage integer
+---@field item_location_percentage integer
 --@field win_collects_missed_locations integer
---@field item_location_step integer
 --@field additional_item_locations integer
 
 ---@class Hint
@@ -74,7 +75,8 @@ local json = require('json')
 ---@field received_items NetworkItem[]
 ---@field available_items table<string, integer>
 ---@field item_names table<string, table<integer, string>>
----@field location_names table<integer, string>
+---@field location_names table<string, string>
+---@field location_ids table<string, string>
 ---@field slot_info table<integer, Slot>
 ---@field slot integer
 ---@field options APOptions
@@ -82,32 +84,77 @@ local json = require('json')
 ---@field hints Hint[]
 local ClientManager = {
   state = "Disconnected",
-  session_id = ""
+  session_id = "",
+  commands_to_be_sent = {}
 }
 
 function ClientManager:own_game()
-  return self.slot_info[self.slot].game
+  return self.slot_info[tostring(self.slot)].game
 end
 
 ---@param slot integer
 function ClientManager:get_game_name(slot)
-  return self.slot_info[slot].game
+  return self.slot_info[tostring(slot)].game
+end
+
+---@param slot integer
+function ClientManager:get_player_name(slot)
+  return self.slot_info[tostring(slot)].name
 end
 
 ---@param code integer
 ---@param game string
 function ClientManager:get_item_name(code, game)
-  return self.item_names[game][code]
+  self.mod.dbg('Code ' .. tostring(code))
+  self.mod.dbg('Game ' .. game)
+  self.mod.dbg('self.item_names[game][tostring(code)] ' .. tostring(self.item_names[game][tostring(code)]))
+  self.mod.dbg('self.item_names[game][tonumber(code)] ' .. tostring(self.item_names[game][tonumber(code)]))
+  return self.item_names[game][tostring(code)]
 end
 
 ---@param code integer
+---@return string|nil
 function ClientManager:get_location_name(code)
-  return self.location_names[code]
+  return self.location_names[tostring(code)]
+end
+
+---@param name string
+---@return integer|nil
+function ClientManager:get_location_id(name)
+  if self.location_ids[name] then
+    return tonumber(self.location_ids[name])
+  end
+  return nil
+end
+
+---@param item NetworkItem
+---@param notification boolean
+function ClientManager:add_available_item(item, notification)
+  local item_name = self:get_item_name(item.item, self:own_game())
+  if not self.available_items[item_name] then
+    self.available_items[item_name] = 1
+  else
+    self.available_items[item_name] = self.available_items[item_name] + 1
+  end
+  if notification then
+    local sub = ''
+    if item.player ~= self.slot then
+      sub = 'from ' .. self:get_player_name(item.player)
+    end
+    if item_name:find('Unlock$') then
+      self.mod.notification_manager:show_fortune(item_name .. 'ed', sub)
+    else
+      self.mod.notification_manager:show_message(item_name, sub)
+    end
+    if item_name:find('Trap$') then
+      self.mod.item_manager.trap_queue:push(item_name)
+    end
+  end
 end
 
 ---@param cmd Command
 function ClientManager:process_mod_command(cmd)
-  self.mod.dbg(cmd.type)
+  self.mod.dbg('Command type: ' .. cmd.type)
   if cmd.type == "AllData" then
     self.session_id = cmd.payload["session_id"]
     self.run_info = cmd.payload["run_info"]
@@ -123,13 +170,84 @@ function ClientManager:process_mod_command(cmd)
     self.hints = cmd.payload["hints"]
     self.available_items = {}
     for _, item in ipairs(self.received_items) do
-      local itemName = self:get_item_name(item.item, self:own_game())
-      if not self.available_items[itemName] then
-        self.available_items[itemName] = 1
-      else
-        self.available_items[itemName] = self.available_items[itemName] + 1
+      self:add_available_item(item, false)
+    end
+    if self.mod.progression_manager.init_on_connect then
+      self.mod.progression_manager:init_new_run()
+    end
+    self.location_ids = {}
+    for id, name in pairs(self.location_names) do
+      self.location_ids[name] = id
+    end
+    self.mod.item_manager:give_items()
+  end
+  if cmd.type == "ReceiveItems" then
+    local items = cmd.payload
+    for _, item in ipairs(items) do
+      self:add_available_item(item, true)
+    end
+    self.mod.item_manager:give_items()
+  end
+end
+
+---@param item string
+---@return boolean
+function ClientManager:has_unlock(item)
+  return self.available_items and self.available_items[item .. ' Unlock'] and self.available_items[item .. ' Unlock'] > 0
+end
+
+local function valueInList(value, list)
+  for _, v in ipairs(list) do
+    if v == value then
+      return true
+    end
+  end
+  return false
+end
+
+local function removeValueFromList(value, list)
+  for i=#list,1,-1 do
+    if list[i] == value then
+      table.remove(list, i)
+    end
+  end
+end
+
+function ClientManager:get_item_location(stage)
+  local search = tostring(stage .. ' - Item #')
+  for _, location in ipairs(self.missing_locations) do
+    local location_name = self:get_location_name(location)
+    if location_name and location_name:sub(1, #search) == search then
+      return location_name
+    end
+  end
+  return nil
+end
+
+---@param names string[]
+function ClientManager:unlock_locations(names)
+  local loc_ids = {}
+  for _, name in ipairs(names) do
+    local id = self:get_location_id(name)
+    if id then
+      if valueInList(id, self.missing_locations) then
+        removeValueFromList(id, self.missing_locations)
+        table.insert(self.checked_locations, id)
+        table.insert(loc_ids, id)
+        local item = self.scouted_locations[tostring(id)]
+        if item.player ~= self.slot then
+          local item_name = self:get_item_name(item.item, self:get_game_name(item.player))
+          self.mod.notification_manager:show_message('Sent ' .. item_name, 'To ' .. self:get_player_name(item.player))
+        end
       end
     end
+  end
+  if #loc_ids > 0 then
+    self.mod.dbg("Send Locations")
+    table.insert(self.commands_to_be_sent, {
+      type = "SendLocations",
+      payload = loc_ids
+    })
   end
 end
 
@@ -139,6 +257,14 @@ function ClientManager:add_received_item(item, amount)
   if not self.run_info.received_items then self.run_info.received_items = {} end
   if not self.run_info.received_items[item] then self.run_info.received_items[item] = 0 end
   self.run_info.received_items[item] = self.run_info.received_items[item] + amount
+end
+
+---@param item string
+---@param amount integer
+function ClientManager:add_discarded_item(item, amount)
+  if not self.run_info.discarded_items then self.run_info.discarded_items = {} end
+  if not self.run_info.discarded_items[item] then self.run_info.discarded_items[item] = 0 end
+  self.run_info.discarded_items[item] = self.run_info.discarded_items[item] + amount
 end
 
 ---@param floor integer
@@ -162,9 +288,14 @@ function ClientManager:connection_request()
 end
 
 function ClientManager:poll()
+    if Game():IsPaused() then return end
     local save_data = SaveData(json.decode(self.mod:LoadData()))
 
-    if save_data.session_id ~= self.session_id then self:connection_request() return end
+    if save_data.session_id ~= self.session_id then
+      self:connection_request()
+      self.session_id = save_data.session_id
+      return
+    end
     if save_data.actor == "mod" and Isaac.GetTime() - save_data.timestamp > 3000 then self.state = "Disconnected" return end
     if save_data.actor ~= "client" then return end
     if self.session_id ~= "" and save_data.session_id ~= self.session_id then return end
@@ -199,6 +330,7 @@ function ClientManager:on_post_render()
 end
 
 function ClientManager:update_run_info()
+  self.mod.dbg("Set run_info")
   table.insert(self.commands_to_be_sent, {
     type = "Set",
     payload = {
@@ -212,7 +344,7 @@ end
 function ClientManager:Init(mod)
   self.mod = mod
 
-  mod:AddCallback(ModCallbacks.MC_POST_RENDER, self.on_post_render)
+  mod:AddCallback(ModCallbacks.MC_POST_RENDER, function() self:on_post_render() end)
 
 end
 

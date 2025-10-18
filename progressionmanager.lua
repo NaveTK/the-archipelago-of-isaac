@@ -2,8 +2,9 @@
 ---@field mod ModReference
 ---@field run_finished boolean
 ---@field new_run boolean
+---@field init_on_connect boolean
+---@field check_special_exists_next_frame boolean
 local ProgressionManager = {
-    
 }
 local rng = RNG()
 
@@ -15,11 +16,14 @@ function ProgressionManager:on_run_start(isContinued)
   if not isContinued then
     if self.mod.client_manager.state == "Connected" then
       self:init_new_run()
+    else
+      self.init_on_connect = true
     end
   end
 end
 
 function ProgressionManager:init_new_run()
+    self.init_on_connect = false
     if self.run_finished then return end
     self.new_run = false
     self.mod.dbg('RunInfo cleared #initnew_run()')
@@ -27,7 +31,8 @@ function ProgressionManager:init_new_run()
         is_active = true,
         received_items = {},
         to_be_distributed = {},
-        unspawned_locations = {}
+        unspawned_locations = {},
+        discarded_items = {}
     }
     self.mod.item_manager:init_new_run()
     self.mod.client_manager:update_run_info()
@@ -165,10 +170,9 @@ end
 
 function ProgressionManager:is_completed_stage_type(stage_type)
     local stage = self:get_current_stage_name(stage_type)
-    self.mod.dbg(stage)
     for _, location in ipairs(self.mod.client_manager.missing_locations) do
         local location_name = self.mod.client_manager:get_location_name(location)
-        if location_name:find('^' .. stage) then
+        if location_name and location_name:find('^' .. stage) then
             return false
         end
     end
@@ -176,7 +180,7 @@ function ProgressionManager:is_completed_stage_type(stage_type)
 end
 
 function ProgressionManager:on_new_level()
-
+  self.mod.dbg("On new level")
   if not self.mod.client_manager.run_info.is_active or self.new_run then return end
 
   if Game():GetLevel():GetStage() > LevelStage.STAGE4_2 or Game():GetLevel():IsPreAscent() then self:on_new_level_post_reroll() return end 
@@ -214,9 +218,9 @@ function ProgressionManager:on_new_level()
     self.mod.dbg('Changing level type to ' .. tostring(level))
     Game():GetLevel():SetStage(Game():GetLevel():GetStage(), level)
     Isaac.ExecuteCommand('reseed')
-  else
-    self:on_new_level_post_reroll()
+    self.mod.dbg("Post reseed")
   end
+  self:on_new_level_post_reroll()
 end
 
 
@@ -230,38 +234,43 @@ function ProgressionManager:on_new_level_post_reroll()
       unspawned_locations[stage_name] = {"Arcade", "Challenge Room", "Curse Room", "Sacrifice Room", "Miniboss Room"}
     end
     
-    if Game():GetLevel():QueryRoomTypeIndex(RoomType.ROOM_ARCADE, false, rng) ~= -1 then
-      for i=#unspawned_locations[stage_name],1,-1 do
-        if unspawned_locations[stage_name][i] == "Arcade" then
-          table.remove(unspawned_locations[stage_name], i)
+    local rooms = Game():GetLevel():GetRooms()
+    for i = 0, rooms.Size-1 do
+      local room_type = rooms:Get(i).Data.Type
+      self.mod.dbg("Floor has room with type " .. tostring(room_type))
+      if room_type == RoomType.ROOM_ARCADE then
+        for i=#unspawned_locations[stage_name],1,-1 do
+          if unspawned_locations[stage_name][i] == "Arcade" then
+            table.remove(unspawned_locations[stage_name], i)
+          end
         end
       end
-    end
-    if Game():GetLevel():QueryRoomTypeIndex(RoomType.ROOM_CHALLENGE, false, rng) ~= -1 then
-      for i=#unspawned_locations[stage_name],1,-1 do
-        if unspawned_locations[stage_name][i] == "Challenge Room" then
-          table.remove(unspawned_locations[stage_name], i)
+      if room_type == RoomType.ROOM_CHALLENGE then
+        for i=#unspawned_locations[stage_name],1,-1 do
+          if unspawned_locations[stage_name][i] == "Challenge Room" then
+            table.remove(unspawned_locations[stage_name], i)
+          end
         end
       end
-    end
-    if Game():GetLevel():QueryRoomTypeIndex(RoomType.ROOM_CURSE, false, rng) ~= -1 then
-      for i=#unspawned_locations[stage_name],1,-1 do
-        if unspawned_locations[stage_name][i] == "Curse Room" then
-          table.remove(unspawned_locations[stage_name], i)
+      if room_type == RoomType.ROOM_CURSE then
+        for i=#unspawned_locations[stage_name],1,-1 do
+          if unspawned_locations[stage_name][i] == "Curse Room" then
+            table.remove(unspawned_locations[stage_name], i)
+          end
         end
       end
-    end
-    if Game():GetLevel():QueryRoomTypeIndex(RoomType.ROOM_SACRIFICE, false, rng) ~= -1 then
-      for i=#unspawned_locations[stage_name],1,-1 do
-        if unspawned_locations[stage_name][i] == "Sacrifice Room" then
-          table.remove(unspawned_locations[stage_name], i)
+      if room_type == RoomType.ROOM_SACRIFICE then
+        for i=#unspawned_locations[stage_name],1,-1 do
+          if unspawned_locations[stage_name][i] == "Sacrifice Room" then
+            table.remove(unspawned_locations[stage_name], i)
+          end
         end
       end
-    end
-    if Game():GetLevel():QueryRoomTypeIndex(RoomType.ROOM_MINIBOSS, false, rng) ~= -1 then
-      for i=#unspawned_locations[stage_name],1,-1 do
-        if unspawned_locations[stage_name][i] == "Miniboss Room" then
-          table.remove(unspawned_locations[stage_name], i)
+      if room_type == RoomType.ROOM_MINIBOSS then
+        for i=#unspawned_locations[stage_name],1,-1 do
+          if unspawned_locations[stage_name][i] == "Miniboss Room" then
+            table.remove(unspawned_locations[stage_name], i)
+          end
         end
       end
     end
@@ -269,11 +278,241 @@ function ProgressionManager:on_new_level_post_reroll()
   end
 end
 
+local function valueInList(value, list)
+  for _, v in ipairs(list) do
+    if v == value then
+      return true
+    end
+  end
+  return false
+end
+
+
+function ProgressionManager:get_door_slot_of_type(doorType)
+  for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do
+    local door = Game():GetRoom():GetDoor(i)
+    if door and door.TargetRoomType == doorType then
+      return i
+    end
+    if door and tostring(door:GetSprite():GetFilename()):find('door_downpour_mirror.anm2') and doorType == 'Mirror' then
+      return i
+    end
+  end
+  return 0
+end
+
+function ProgressionManager:should_have_doors()
+  local should_have_door_types = {}
+
+  local is_boss = Game():GetRoom():IsCurrentRoomLastBoss()
+  local alt_path = Game():GetLevel():GetStageType() == StageType.STAGETYPE_REPENTANCE or Game():GetLevel():GetStageType() == StageType.STAGETYPE_REPENTANCE_B
+  local is_xl = Game():GetLevel():GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0
+  local moms_foot_floor = (Game():GetLevel():GetStage() == LevelStage.STAGE3_2 or (Game():GetLevel():GetStage() == LevelStage.STAGE3_1 and is_xl))
+  local moms_heart_floor = (Game():GetLevel():GetStage() == LevelStage.STAGE4_2 or (Game():GetLevel():GetStage() == LevelStage.STAGE4_1 and is_xl))
+
+  if (self.mod.client_manager:has_unlock('Downpour') or self.mod.client_manager:has_unlock('Dross')) then
+    if (Game():GetLevel():GetStage() == LevelStage.STAGE1_1 or Game():GetLevel():GetStage() == LevelStage.STAGE1_2) and not alt_path then
+      table.insert(should_have_door_types, RoomType.ROOM_SECRET_EXIT)
+    end
+  end
+  if (self.mod.client_manager:has_unlock('Mines') or self.mod.client_manager:has_unlock('Ashpit')) then
+    if ((Game():GetLevel():GetStage() == LevelStage.STAGE2_1 or Game():GetLevel():GetStage() == LevelStage.STAGE2_2) and not alt_path)
+      or ((Game():GetLevel():GetStage() == LevelStage.STAGE1_2 or (Game():GetLevel():GetStage() == LevelStage.STAGE1_1 and is_xl)) and alt_path) then
+      table.insert(should_have_door_types, RoomType.ROOM_SECRET_EXIT)
+    end
+  end
+  if (self.mod.client_manager:has_unlock('Mausoleum') or self.mod.client_manager:has_unlock('Gehenna')) then
+    if (Game():GetLevel():GetStage() == LevelStage.STAGE3_1 and not alt_path and not is_xl)
+      or ((Game():GetLevel():GetStage() == LevelStage.STAGE2_2 or (Game():GetLevel():GetStage() == LevelStage.STAGE2_1 and is_xl)) and alt_path) then
+      table.insert(should_have_door_types, RoomType.ROOM_SECRET_EXIT)
+    end
+  end
+  if (self.mod.client_manager:has_unlock('Home')) then
+    if Game():GetLevel():GetStartingRoomIndex() == Game():GetLevel():GetCurrentRoomIndex() and not alt_path and moms_foot_floor then
+      table.insert(should_have_door_types, RoomType.ROOM_SECRET_EXIT)
+    end
+  end
+
+  if is_boss and moms_foot_floor and self.mod.client_manager:has_unlock('Boss Rush') then
+    table.insert(should_have_door_types, RoomType.ROOM_BOSSRUSH)
+  end
+
+  return should_have_door_types
+end
+
+function ProgressionManager:check_special_exits()
+  local has_door_types = {}
+  local has_door_indexes = {}
+  for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do
+    local door = Game():GetRoom():GetDoor(i)
+    if door then
+      self.mod.dbg('Found door to room type: ' .. tostring(door.TargetRoomType) .. ' with index ' .. tostring(door.TargetRoomIndex))
+      table.insert(has_door_types, door.TargetRoomType)
+      table.insert(has_door_indexes, door.TargetRoomIndex)
+    end
+  end
+
+  local should_have_door_types = self:should_have_doors()
+  self.mod.dbg('Should have door types: ' .. table.concat(should_have_door_types, ', '))
+  self.mod.dbg('Should have door indexes: ' .. table.concat(has_door_indexes, ', '))
+
+  local is_boss = Game():GetRoom():IsCurrentRoomLastBoss()
+  local alt_path = Game():GetLevel():GetStageType() == StageType.STAGETYPE_REPENTANCE or Game():GetLevel():GetStageType() == StageType.STAGETYPE_REPENTANCE_B
+  local is_xl = Game():GetLevel():GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0
+  local moms_foot_floor = (Game():GetLevel():GetStage() == LevelStage.STAGE3_2 or (Game():GetLevel():GetStage() == LevelStage.STAGE3_1 and is_xl))
+  local moms_heart_floor = (Game():GetLevel():GetStage() == LevelStage.STAGE4_2 or (Game():GetLevel():GetStage() == LevelStage.STAGE4_1 and is_xl))
+
+  if not valueInList(RoomType.ROOM_SECRET_EXIT, should_have_door_types) and valueInList(RoomType.ROOM_SECRET_EXIT, has_door_types) then
+    self.mod.dbg('Removing secret exit')
+    Game():GetRoom():RemoveDoor(self:get_door_slot_of_type(RoomType.ROOM_SECRET_EXIT))
+  end
+  if moms_foot_floor and is_boss then
+    local trapdoor = Game():GetRoom():GetGridEntity(37)
+    self.mod.dbg('Checking for trapdoor to Womb: ' .. tostring(trapdoor ~= nil))
+    if trapdoor and not Game():GetStateFlag(GameStateFlag.STATE_MAUSOLEUM_HEART_KILLED) and not self.mod.client_manager:has_unlock('Womb') and not self.mod.client_manager:has_unlock('Utero') and not self.mod.client_manager:has_unlock('Scarred Womb') then
+      self.mod.dbg('Removing trapdoor to Womb and spawning trophy')
+      Game():GetRoom():RemoveGridEntity(trapdoor:GetGridIndex(), 0, false)
+      Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TROPHY, 0, Game():GetRoom():GetCenterPos(), Vector.Zero, nil)
+    end
+  end
+
+  if (moms_heart_floor or Game():GetLevel():GetStage() == LevelStage.STAGE4_3) and is_boss and not alt_path then
+    local trapdoor = Game():GetRoom():GetGridEntity(66) or Game():GetRoom():GetGridEntity(125)
+    self.mod.dbg('Checking for trapdoor to Sheol: ' .. tostring(trapdoor ~= nil))
+    if trapdoor and not self.mod.client_manager:has_unlock('Sheol') then
+      self.mod.dbg('Removing trapdoor to Sheol')
+      Game():GetRoom():RemoveGridEntity(trapdoor:GetGridIndex(), 0, false)
+    end
+
+    local beam = nil
+    for _, e in ipairs(Isaac.GetRoomEntities()) do
+      if e.Type == EntityType.ENTITY_EFFECT and e.Variant == EffectVariant.HEAVEN_LIGHT_DOOR then
+        beam = e
+        break
+      end
+    end
+    self.mod.dbg('Checking for beam to Cathedral: ' .. tostring(beam ~= nil))
+    if beam and not self.mod.client_manager:has_unlock('Cathedral') then
+      self.mod.dbg('Removing beam to Cathedral')
+      beam:Remove()
+    end
+
+    if beam and trapdoor and not self.mod.client_manager:has_unlock('Sheol') and not self.mod.client_manager:has_unlock('Cathedral') then
+      Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TROPHY, 0, Game():GetRoom():GetCenterPos(), Vector.Zero, nil)
+    end
+  end
+
+  if moms_foot_floor or moms_heart_floor or Game():GetLevel():GetStage() >= LevelStage.STAGE5 then
+    if (is_boss or Game():GetLevel():GetCurrentRoomIndex() == -9 or Game():GetLevel():GetCurrentRoomIndex() == -7) and not self.mod.client_manager:has_unlock('The Void') then
+      local portal_position = 97
+      if Game():GetLevel():GetCurrentRoomIndex() == -9 then
+        portal_position = 67
+      end
+      if Game():GetLevel():GetCurrentRoomIndex() == -7 then
+        portal_position = 157
+      end
+      local portal = Game():GetRoom():GetGridEntity(portal_position)
+      self.mod.dbg('Checking for portal to The Void: ' .. tostring(portal ~= nil))
+      if portal then
+        self.mod.dbg('Removing portal to The Void')
+        Game():GetRoom():RemoveGridEntity(portal:GetGridIndex(), 0, false)
+      end
+    end
+  end
+  
+  if not valueInList(RoomType.ROOM_BOSSRUSH, should_have_door_types) and valueInList(RoomType.ROOM_BOSSRUSH, has_door_types) then
+    self.mod.dbg('Removing Boss rush')
+    Game():GetRoom():RemoveDoor(self:get_door_slot_of_type(RoomType.ROOM_BOSSRUSH))
+  end
+  
+  if moms_heart_floor and is_boss and not alt_path and not self.mod.client_manager:has_unlock('???') and valueInList(-8, has_door_indexes) then
+    self.mod.dbg('Removing Boss rush')
+    for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do
+      local door = Game():GetRoom():GetDoor(i)
+      if door and door.TargetRoomIndex == -8 then
+        Game():GetRoom():RemoveDoor(i)
+      end
+    end
+  end
+end
+
+function ProgressionManager:enter_room()
+  self.mod.dbg('Current stage: ' .. self:get_current_stage_name())
+  self.mod.dbg('Current Room Index: ' .. Game():GetLevel():GetCurrentRoomIndex())
+  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
+  self:check_special_exits()
+end
+
+function ProgressionManager:on_post_update()
+  if self.check_special_exists_next_frame then
+    self.check_special_exists_next_frame = false
+    self:check_special_exits()
+  end
+end
+
+function ProgressionManager:room_cleared()
+  self.mod.dbg('Current room type: ' .. tostring(Game():GetRoom():GetType()))
+  if Game():GetRoom():GetType() == RoomType.ROOM_BOSS then
+    self.check_special_exists_next_frame = true
+  end
+end
+
+local ap_item_id = Isaac.GetItemIdByName('AP Item')
+
+---@param pickup EntityPickup
+function ProgressionManager:on_pickup_init(pickup)
+  self.mod.dbg('Pickup Init: ' .. tostring(pickup.Type) .. '.' .. tostring(pickup.Variant) .. '.' .. tostring(pickup.SubType))
+  if pickup.Type == EntityType.ENTITY_PICKUP and pickup.Variant == PickupVariant.PICKUP_COLLECTIBLE then
+    self.mod.dbg('Pickup Reroll Consider')
+    local next_location = self.mod.client_manager:get_item_location(self:get_current_stage_name())
+
+    if not next_location and pickup.SubType == ap_item_id then
+      pickup:Morph(pickup.Type, pickup.Variant, Game():GetItemPool():GetCollectible(Game():GetItemPool():GetPoolForRoom(Game():GetRoom():GetType(), rng:Next()), true, rng:Next()), true, true, true)
+    end
+
+    if not Game():GetRoom():IsFirstVisit() and Game():GetRoom():GetFrameCount() == -1 then self.mod.dbg("Skip Reroll") return end
+
+    if self.mod.item_manager.lock_item then
+      self.mod.dbg('LOCK ITEM SET TO FALSE!')
+      self.mod.item_manager.lock_item = false
+      return
+    end
+
+    local item_config = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
+    local quest_item = item_config.Tags & ItemConfig.TAG_QUEST ~= 0
+
+    self.mod.dbg('Quest Item: ' .. tostring(quest_item) .. ' Ap item: ' .. tostring(pickup.SubType == ap_item_id))
+
+    if next_location and not quest_item and pickup.SubType ~= ap_item_id and pickup:GetDropRNG():RandomInt(100) < self.mod.client_manager.options.item_location_percentage then
+      self.mod.dbg("Roll into AP")
+      --rng:Next()
+      pickup:Morph(pickup.Type, pickup.Variant, ap_item_id, true, false, true)
+    end
+
+    if pickup.SubType == CollectibleType.COLLECTIBLE_KNIFE_PIECE_1 and not self.mod.client_manager:has_unlock('Knife Pieces') then
+      pickup:Morph(pickup.Type, pickup.Variant, Game():GetItemPool():GetCollectible(ItemPoolType.POOL_TREASURE, true, rng:Next()), true, true, true)
+    end
+    if pickup.SubType == CollectibleType.COLLECTIBLE_POLAROID and not self.mod.client_manager:has_unlock('The Polaroid') then
+      pickup:Morph(pickup.Type, pickup.Variant, Game():GetItemPool():GetCollectible(ItemPoolType.POOL_BOSS, true, rng:Next()), true, true, true)
+    end
+    if pickup.SubType == CollectibleType.COLLECTIBLE_NEGATIVE and not self.mod.client_manager:has_unlock('The Negative') then
+      pickup:Morph(pickup.Type, pickup.Variant, Game():GetItemPool():GetCollectible(ItemPoolType.POOL_BOSS, true, rng:Next()), true, true, true)
+    end
+    if (pickup.SubType == CollectibleType.COLLECTIBLE_KEY_PIECE_1 or pickup.SubType == CollectibleType.COLLECTIBLE_KEY_PIECE_2) and not self.mod.client_manager:has_unlock('Key Pieces') then
+      pickup:Remove()
+    end
+  end
+end
+
 ---@param mod ModReference
 function ProgressionManager:Init(mod)
   self.mod = mod
 
-  mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, self.on_run_start)
+  mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function() self:enter_room() end)
+  mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function() self:on_run_start() end)
+  mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() self:on_post_update() end)
+  mod:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, function() self:room_cleared() end)
+  mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, function(_, pickup) self:on_pickup_init(pickup) end)
 end
 
 return ProgressionManager
