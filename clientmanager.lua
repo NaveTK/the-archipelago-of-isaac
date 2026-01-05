@@ -74,6 +74,7 @@ local json = require('json')
 ---@field missing_locations integer[]
 ---@field received_items NetworkItem[]
 ---@field available_items table<string, integer>
+---@field goals table<string, boolean>
 ---@field item_names table<string, table<integer, string>>
 ---@field location_names table<string, string>
 ---@field location_ids table<string, string>
@@ -143,6 +144,18 @@ function ClientManager:add_available_item(item, notification)
     end
     if item_name:find('Unlock$') then
       self.mod.notification_manager:show_fortune(item_name .. 'ed', sub)
+      if item_name == 'We Need To Go Deeper! Unlock' then
+        self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_WE_NEED_TO_GO_DEEPER)
+      end
+      if item_name == 'Undefined Unlock' then
+        self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_UNDEFINED)
+      end
+      if item_name == 'Telescope Lens Unlock' then
+          self.mod.item_manager.consumable_queue:push(TrinketType.TRINKET_TELESCOPE_LENS)
+      end
+      if item_name == 'Red Key Unlock' then
+        self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_RED_KEY)
+      end
     else
       self.mod.notification_manager:show_message(item_name, sub)
     end
@@ -158,6 +171,7 @@ function ClientManager:process_mod_command(cmd)
   if cmd.type == "AllData" then
     self.session_id = cmd.payload["session_id"]
     self.run_info = cmd.payload["run_info"]
+    self.goals = cmd.payload["goals"]
     self.checked_locations = cmd.payload["checked_locations"]
     self.missing_locations = cmd.payload["missing_locations"]
     self.received_items = cmd.payload["received_items"]
@@ -288,8 +302,11 @@ function ClientManager:connection_request()
 end
 
 function ClientManager:poll()
-    if Game():IsPaused() then return end
-    local save_data = SaveData(json.decode(self.mod:LoadData()))
+    --if Game():IsPaused() then return end
+    local success, js = pcall(function() return json.decode(self.mod:LoadData()) end)
+    if not success then return end
+
+    local save_data = SaveData(js)
 
     if save_data.session_id ~= self.session_id then
       self:connection_request()
@@ -306,15 +323,19 @@ function ClientManager:poll()
       self:process_mod_command(cmd)
     end
 
-    local new_save_data = SaveData({
-      session_id=self.session_id,
-      timestamp=Isaac.GetTime(),
-      actor="mod",
-      commands=self.commands_to_be_sent
-    })
-    self.commands_to_be_sent = {}
+    self:send_commands()
+end
 
-    self.mod:SaveData(json.encode(new_save_data))
+function ClientManager:send_commands()
+  local new_save_data = SaveData({
+    session_id=self.session_id,
+    timestamp=Isaac.GetTime(),
+    actor="mod",
+    commands=self.commands_to_be_sent
+  })
+  self.commands_to_be_sent = {}
+
+  self.mod:SaveData(json.encode(new_save_data))
 end
 
 function ClientManager:on_post_render()
@@ -338,6 +359,20 @@ function ClientManager:update_run_info()
       data = self.run_info
     }
   })
+end
+
+function ClientManager:send_goal(boss)
+  if self.goals[boss] ~= nil then
+    self.goals[boss] = true
+    self.mod.dbg("Set goals")
+    table.insert(self.commands_to_be_sent, {
+      type = "Set",
+      payload = {
+        key = "goals",
+        data = self.goals
+      }
+    })
+  end
 end
 
 ---@param mod ModReference

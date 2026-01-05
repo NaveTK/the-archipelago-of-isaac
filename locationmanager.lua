@@ -65,8 +65,11 @@ function LocationManager:unlock_location()
   if roomType == RoomType.ROOM_BOSSRUSH then
     location_name = 'Boss Rush - Boss Room'
   end
-  if Game():GetLevel():GetCurrentRoomIndex() == -7 and Game():GetLevel():GetStage() == LevelStage.STAGE7 then
+  if Game():GetLevel():GetCurrentRoomIndex() == -7 and Game():GetLevel():GetStage() == LevelStage.STAGE6 then
     location_name = 'Mega Satan - Boss Room'
+  end
+  if Game():GetLevel():GetCurrentRoomIndex() == -10 and Game():GetLevel():GetStage() == LevelStage.STAGE8 then
+    location_name = 'Home - Boss Room'
   end
   self.mod.dbg('Current location name: ' .. tostring(location_name))
   if not location_name then return end
@@ -74,7 +77,7 @@ function LocationManager:unlock_location()
 end
 
 function LocationManager:enter_room()
-  if Game():GetRoom():IsClear() and Game():GetRoom():GetType() ~= RoomType.ROOM_CHALLENGE then
+  if Game():GetRoom():IsClear() and Game():GetRoom():GetType() ~= RoomType.ROOM_CHALLENGE and Game():GetRoom():GetType() ~= RoomType.ROOM_BOSSRUSH and not (Game():GetLevel():GetCurrentRoomIndex() == -7 and Game():GetLevel():GetStage() == LevelStage.STAGE7) then
     self:unlock_location()
   end
 end
@@ -93,7 +96,7 @@ function LocationManager:get_main_boss()
   if is_boss and moms_heart_floor and not alt_path then
     return 'Mom\'s Heart'
   end
-  if Game():GetRoom():GetType() == RoomType.ROOM_BOSSRUSH and moms_foot_floor then
+  if Game():GetRoom():GetType() == RoomType.ROOM_BOSSRUSH then
     return 'Boss Rush'
   end
   if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE5 and Game():GetStateFlag(GameStateFlag.STATE_HEAVEN_PATH) then
@@ -114,13 +117,13 @@ function LocationManager:get_main_boss()
   if Game():GetLevel():GetCurrentRoomIndex() == -7 and Game():GetLevel():GetStage() == LevelStage.STAGE6 then
     return 'Mega Satan'
   end
-  if is_boss and moms_heart_floor and alt_path then
+  if moms_heart_floor and Game():GetLevel():GetCurrentRoomIndex() == -10 then
     return 'Mother'
   end
-  if Game():GetLevel():GetStage() == LevelStage.STAGE8 then
+  if Game():GetLevel():GetStage() == LevelStage.STAGE8 and Game():GetLevel():GetCurrentRoomIndex() == -10 then
     return 'Beast'
   end
-  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE7 then
+  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE7 and Game():GetLevel():GetCurrentRoom():GetRoomShape() == RoomShape.ROOMSHAPE_2x2 then
     return 'Delirium'
   end
   return nil
@@ -148,7 +151,8 @@ function LocationManager:room_cleared()
     for i = 1, boss_rewards[boss]+1 do
       table.insert(locations, boss .. ' Reward #' .. tostring(i))
     end
-    table.insert(locations, 'Defeat ' .. boss)
+
+    self.mod.client_manager:send_goal(boss)
     self.mod.client_manager:unlock_locations(locations)
   end
   self:unlock_location()
@@ -169,6 +173,43 @@ function LocationManager:on_post_update()
   end
 end
 
+function LocationManager:on_run_ended(lost)
+  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
+
+  self.mod.dbg('Run result, lost: ' .. tostring(lost))
+  local unspawned_locations = self.mod.client_manager.run_info.unspawned_locations
+  local locations = {}
+  self.mod.dbg('Unspawned Locations:')
+  for floor, rooms in pairs(unspawned_locations) do
+    self.mod.dbg('  ' .. floor .. ':')
+    for _, room in ipairs(rooms) do
+      self.mod.dbg('    ' .. room)
+      table.insert(locations, floor .. ' - ' .. room)
+    end
+  end
+  if not lost then
+    self.mod.client_manager:unlock_locations(locations)
+  end
+
+  self.mod.client_manager.run_info.is_active = false
+  self.mod.client_manager.run_info.received_items = {}
+  self.mod.client_manager.run_info.to_be_distributed = {}
+  self.mod.client_manager.run_info.discarded_items = {}
+  self.mod.client_manager:update_run_info()
+
+  self.mod.client_manager:send_commands()
+end
+
+---@param entity_pickup EntityPickup
+---@param collider Entity
+function LocationManager:on_pickup_collision(entity_pickup, collider)
+  if collider.Index == Isaac.GetPlayer().Index then
+    if entity_pickup.Variant == PickupVariant.PICKUP_TROPHY then
+      self:on_run_ended(false)
+    end
+  end
+end
+
 ---@param mod ModReference
 function LocationManager:Init(mod)
   self.mod = mod
@@ -176,6 +217,8 @@ function LocationManager:Init(mod)
   mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function() self:enter_room() end)
   mod:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, function() self:room_cleared() end)
   mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() self:on_post_update() end)
+  mod:AddCallback(ModCallbacks.MC_POST_GAME_END, function(_, lost) self:on_run_ended(lost) end)
+  mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, function(_, entity_pickup, collider) self:on_pickup_collision(entity_pickup, collider) end)
 end
 
 return LocationManager

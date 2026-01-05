@@ -8,12 +8,12 @@ local ProgressionManager = {
 }
 local rng = RNG()
 
-function ProgressionManager:on_run_start(isContinued)
+function ProgressionManager:on_run_start(continued)
   self.run_finished = false
-  self.mod.dbg('Run started, continued: ' .. tostring(isContinued))
+  self.mod.dbg('Run started, continued: ' .. tostring(continued))
   rng:SetSeed(Game():GetSeeds():GetStartSeed(), 35)
   self.new_run = false
-  if not isContinued then
+  if not continued then
     if self.mod.client_manager.state == "Connected" then
       self:init_new_run()
     else
@@ -42,7 +42,7 @@ end
 ---@param unlock string
 ---@return boolean
 function ProgressionManager:has_unlock(unlock)
-  return self.mod.client_manager.available_items[unlock] and self.mod.client_manager.available_items[unlock] > 0
+  return self.mod.client_manager.available_items[unlock .. ' Unlock'] and self.mod.client_manager.available_items[unlock .. ' Unlock'] > 0
 end
 
 function ProgressionManager:get_unlocked_stage_types(currentStage, currentStageType)
@@ -152,6 +152,9 @@ function ProgressionManager:get_current_stage_name(--[[optional]] stageType)
   if Game():GetRoom():IsMirrorWorld() then
     return 'Mirrorworld'
   end
+  if Game():GetRoom():GetType() == RoomType.ROOM_BOSSRUSH then
+    return 'Boss Rush'
+  end
   if stage < LevelStage.STAGE4_3 then
     local firstStage = math.floor((stage - 1) / 2) * 2 + 1
     return stage_names[tostring(firstStage) .. '_' .. tostring(type)]
@@ -181,7 +184,7 @@ end
 
 function ProgressionManager:on_new_level()
   self.mod.dbg("On new level")
-  if not self.mod.client_manager.run_info.is_active or self.new_run then return end
+  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active or self.new_run then return end
 
   if Game():GetLevel():GetStage() > LevelStage.STAGE4_2 or Game():GetLevel():IsPreAscent() then self:on_new_level_post_reroll() return end 
 
@@ -227,55 +230,53 @@ end
 function ProgressionManager:on_new_level_post_reroll()
   self.mod.item_manager:distribute_items()
 
-  if Game():GetLevel():GetStage() <= LevelStage.STAGE4_2 then
-    local unspawned_locations = self.mod.client_manager.run_info.unspawned_locations
-    local stage_name = self:get_current_stage_name()
-    if not unspawned_locations[stage_name] then
-      unspawned_locations[stage_name] = {"Arcade", "Challenge Room", "Curse Room", "Sacrifice Room", "Miniboss Room"}
-    end
-    
-    local rooms = Game():GetLevel():GetRooms()
-    for i = 0, rooms.Size-1 do
-      local room_type = rooms:Get(i).Data.Type
-      self.mod.dbg("Floor has room with type " .. tostring(room_type))
-      if room_type == RoomType.ROOM_ARCADE then
-        for i=#unspawned_locations[stage_name],1,-1 do
-          if unspawned_locations[stage_name][i] == "Arcade" then
-            table.remove(unspawned_locations[stage_name], i)
-          end
-        end
-      end
-      if room_type == RoomType.ROOM_CHALLENGE then
-        for i=#unspawned_locations[stage_name],1,-1 do
-          if unspawned_locations[stage_name][i] == "Challenge Room" then
-            table.remove(unspawned_locations[stage_name], i)
-          end
-        end
-      end
-      if room_type == RoomType.ROOM_CURSE then
-        for i=#unspawned_locations[stage_name],1,-1 do
-          if unspawned_locations[stage_name][i] == "Curse Room" then
-            table.remove(unspawned_locations[stage_name], i)
-          end
-        end
-      end
-      if room_type == RoomType.ROOM_SACRIFICE then
-        for i=#unspawned_locations[stage_name],1,-1 do
-          if unspawned_locations[stage_name][i] == "Sacrifice Room" then
-            table.remove(unspawned_locations[stage_name], i)
-          end
-        end
-      end
-      if room_type == RoomType.ROOM_MINIBOSS then
-        for i=#unspawned_locations[stage_name],1,-1 do
-          if unspawned_locations[stage_name][i] == "Miniboss Room" then
-            table.remove(unspawned_locations[stage_name], i)
-          end
-        end
-      end
-    end
-    self.mod.client_manager:update_run_info()
+  local unspawned_locations = self.mod.client_manager.run_info.unspawned_locations
+  local stage_name = self:get_current_stage_name()
+  if not unspawned_locations[stage_name] then
+    unspawned_locations[stage_name] = {"Arcade", "Challenge Room", "Curse Room", "Sacrifice Room", "Miniboss Room"}
   end
+  
+  local rooms = Game():GetLevel():GetRooms()
+  for i = 0, rooms.Size-1 do
+    local room_type = rooms:Get(i).Data.Type
+    self.mod.dbg("Floor has room with type " .. tostring(room_type))
+    if room_type == RoomType.ROOM_ARCADE then
+      for i=#unspawned_locations[stage_name],1,-1 do
+        if unspawned_locations[stage_name][i] == "Arcade" then
+          table.remove(unspawned_locations[stage_name], i)
+        end
+      end
+    end
+    if room_type == RoomType.ROOM_CHALLENGE then
+      for i=#unspawned_locations[stage_name],1,-1 do
+        if unspawned_locations[stage_name][i] == "Challenge Room" then
+          table.remove(unspawned_locations[stage_name], i)
+        end
+      end
+    end
+    if room_type == RoomType.ROOM_CURSE then
+      for i=#unspawned_locations[stage_name],1,-1 do
+        if unspawned_locations[stage_name][i] == "Curse Room" then
+          table.remove(unspawned_locations[stage_name], i)
+        end
+      end
+    end
+    if room_type == RoomType.ROOM_SACRIFICE then
+      for i=#unspawned_locations[stage_name],1,-1 do
+        if unspawned_locations[stage_name][i] == "Sacrifice Room" then
+          table.remove(unspawned_locations[stage_name], i)
+        end
+      end
+    end
+    if room_type == RoomType.ROOM_MINIBOSS then
+      for i=#unspawned_locations[stage_name],1,-1 do
+        if unspawned_locations[stage_name][i] == "Miniboss Room" then
+          table.remove(unspawned_locations[stage_name], i)
+        end
+      end
+    end
+  end
+  self.mod.client_manager:update_run_info()
 end
 
 local function valueInList(value, list)
@@ -327,7 +328,7 @@ function ProgressionManager:should_have_doors()
       table.insert(should_have_door_types, RoomType.ROOM_SECRET_EXIT)
     end
   end
-  if (self.mod.client_manager:has_unlock('Home')) then
+  if (self.mod.client_manager:has_unlock('Strange Door')) then
     if Game():GetLevel():GetStartingRoomIndex() == Game():GetLevel():GetCurrentRoomIndex() and not alt_path and moms_foot_floor then
       table.insert(should_have_door_types, RoomType.ROOM_SECRET_EXIT)
     end
@@ -402,9 +403,12 @@ function ProgressionManager:check_special_exits()
     end
   end
 
-  if moms_foot_floor or moms_heart_floor or Game():GetLevel():GetStage() >= LevelStage.STAGE5 then
-    if (is_boss or Game():GetLevel():GetCurrentRoomIndex() == -9 or Game():GetLevel():GetCurrentRoomIndex() == -7) and not self.mod.client_manager:has_unlock('The Void') then
+  if moms_foot_floor or moms_heart_floor or Game():GetLevel():GetStage() >= LevelStage.STAGE4_3 then
+    if (is_boss or Game():GetLevel():GetCurrentRoomIndex() == -9 or Game():GetLevel():GetCurrentRoomIndex() == -10 or Game():GetLevel():GetCurrentRoomIndex() == -7) and not self.mod.client_manager:has_unlock('Void Portal') then
       local portal_position = 97
+      if Game():GetLevel():GetCurrentRoomIndex() == -10 then
+        portal_position = 172
+      end
       if Game():GetLevel():GetCurrentRoomIndex() == -9 then
         portal_position = 67
       end
@@ -439,6 +443,7 @@ end
 function ProgressionManager:enter_room()
   self.mod.dbg('Current stage: ' .. self:get_current_stage_name())
   self.mod.dbg('Current Room Index: ' .. Game():GetLevel():GetCurrentRoomIndex())
+  self.mod.dbg('Current Room Shape: ' .. Game():GetLevel():GetCurrentRoom():GetRoomShape())
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   self:check_special_exits()
 end
@@ -509,10 +514,11 @@ function ProgressionManager:Init(mod)
   self.mod = mod
 
   mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function() self:enter_room() end)
-  mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function() self:on_run_start() end)
+  mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function(_, continued) self:on_run_start(continued) end)
   mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() self:on_post_update() end)
   mod:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, function() self:room_cleared() end)
   mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, function(_, pickup) self:on_pickup_init(pickup) end)
+  mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function() self:on_new_level() end)
 end
 
 return ProgressionManager

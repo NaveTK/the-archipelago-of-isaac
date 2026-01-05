@@ -15,7 +15,7 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 ### Changes
 - [x] ~~Key pieces should be removed not replaced without Mega Satan unlock~~
 - [x] ~~Rename Unlocks to what they actually unlock (i.e. Unlock Negative instead of Unlock Dark Room)~~
-- [ ] Code cleanup and refactoring
+- [x] ~~Code cleanup and refactoring~~
 - [x] ~~Make RNG heavy room checks once per Act, not per stage type (Vault, Bedroom, Dice room, Library)~~
 - [x] ~~External game client for networking instead of --luadbg~~
 - [ ] In-game indicator showing what rooms to check on current floor
@@ -36,16 +36,17 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Option on how to handle out-of-logic checks through sequence breaking (Block, None, All, Store)
 
 ### Bugs
+- [ ] Escape Knife Piece unlock doesnt work properly
 - [x] ~~Generation sometimes fails~~
 - [x] ~~Key pieces still spawn for Angels in Sacrifice room without Mega Satan unlock~~
 - [ ] Victory runs shouldn't count
-- [ ] Death link is always on regardless of settings
+- [x] ~~Death link is always on regardless of settings~~
 - [ ] Black candle doesn't block curse traps
 - [x] ~~Item previews indicate wrong items (Guppy's eye, Crane game)~~
 - [x] ~~Dice room rerolls may delete your items~~
 - [x] ~~Using Glowing Hourglass on Lilith sometimes deletes your Incubus (not sure if this has something to do with the mod or if it is a vanilla Isaac bug)~~
 - [ ] Lost soul sometimes gives rewards even if it died last floor
-- [ ] Found soul dying triggers death link (lol)
+- [x] ~~Found soul dying triggers death link (lol)~~
 - [x] ~~Modeling Clay crashes game~~
 - [x] ~~XL floors may mess up progression locks~~
 - [x] ~~Boss rush and other Boss room locations do not get checked properly~~

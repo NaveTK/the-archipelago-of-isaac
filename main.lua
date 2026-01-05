@@ -40,47 +40,6 @@ function mod:onPostUpdate()
 
 end
 
-
----@param entity_pickup EntityPickup
----@param collider Entity
----@param low boolean
-function mod:onPickupCollision(entity_pickup, collider, low)
-  if collider.Index == Isaac.GetPlayer().Index then
-    mod:dbg('Collision with ' .. tostring(entity_pickup.Variant))
-    if entity_pickup.Variant == PickupVariant.PICKUP_TROPHY then
-      mod:finishedRun(false)
-      --Game():End(3)
-    end
-  end
-end
-
-function mod:finishedRun(lost)
-  mod:dbg('Run result, lost: ' .. tostring(lost))
-  newRun = true
-  runFinished = true
-  runInfo['is_active'] = false
-  ap:Set(cfg.slot .. '_run_info', {}, false, { {'replace', runInfo}})
-  if not lost and options and options['win_collects_missed_locations'] and runInfo and runInfo['visited_stages'] then
-    local locationsToCheck = {}
-    for _, visitedStage in ipairs(runInfo['visited_stages']) do
-      for _, roomName in pairs(roomNames) do
-        local location_name = visitedStage .. ' - ' .. roomName
-        local location_id = ap:get_location_id(location_name)
-        if location_id and location_id > 0 then
-          table.insert(locationsToCheck, location_id)
-        end
-      end
-    end
-    if ap and ap:get_state() == ap.State.SLOT_CONNECTED then
-      ap:LocationChecks(locationsToCheck)
-    else
-      for _, location_id in ipairs(locationsToCheck) do
-        table.insert(queuedLocations, location_id)
-      end
-    end
-  end
-end
-
 ---@param entity Entity
 ---@param entity_type EntityType
 function mod:onEntityKill(entity, entity_type)
@@ -103,7 +62,6 @@ function mod:onEntityKill(entity, entity_type)
 
 end
 
-
 function mod:backToMenu()
   newRun = true
 end
@@ -119,10 +77,8 @@ function mod:onFortuneTellingMachine(entity_npc, collider)
 end
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, mod.onPostUpdate)
-mod:AddCallback(ModCallbacks.MC_POST_GAME_END, mod.finishedRun)
 mod:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, mod.onEntityKill)
 mod:AddCallback(ModCallbacks.MC_PRE_GET_COLLECTIBLE, mod.onItemSpawn)
-mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, mod.onPickupCollision)
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, mod.connectionMenu)
 mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, mod.backToMenu)
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, mod.onItemUse)
