@@ -119,7 +119,7 @@ end
 ---@param name string
 ---@return integer|nil
 function ClientManager:get_location_id(name)
-  if self.location_ids[name] then
+  if self.location_ids and self.location_ids[name] then
     return tonumber(self.location_ids[name])
   end
   return nil
@@ -415,6 +415,7 @@ end
 
 function ClientManager:send_hint()
   self.mod.dbg("Send random hint")
+  if #self.hintable_locations == 0 then return end
   local idx = math.random(#self.hintable_locations)
   local loc = self.hintable_locations[idx]
   self.mod.dbg(idx .. '/' .. #self.hintable_locations .. ': Location ' .. loc)

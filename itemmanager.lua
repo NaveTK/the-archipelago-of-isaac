@@ -227,12 +227,23 @@ function ItemManager:get_items_to_give()
   return items_to_give
 end
 
+local function valueInList(value, list)
+  for _, v in ipairs(list) do
+    if v == value then
+      return true
+    end
+  end
+  return false
+end
+
 function ItemManager:queue_item_from_pool(poolType)
   local pool  = Game():GetItemPool()
   local itemId = pool:GetCollectible(poolType, true, rng:Next())
+  while valueInList(itemId, self.mod.client_manager.forbidden_items) do
+    itemId = pool:GetCollectible(poolType, true, rng:Next())
+  end
   self.give_queue:push(itemId)
 end
-
 
 function ItemManager:give_next()  
   if self.give_queue.size > 0 then

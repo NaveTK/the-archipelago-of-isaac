@@ -186,7 +186,13 @@ function ProgressionManager:on_new_level()
   self.mod.dbg("On new level")
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active or self.new_run then return end
 
-  if Game():GetLevel():GetStage() > LevelStage.STAGE4_2 or Game():GetLevel():IsPreAscent() then self:on_new_level_post_reroll() return end 
+  if Game():GetLevel():GetStage() == LevelStage.STAGE8 and Game():GetLevel():GetStageType() == StageType.STAGETYPE_WOTL and Game():GetLevel():GetStartingRoomIndex() == Game():GetLevel():GetCurrentRoomIndex() then
+    self.mod.dbg('Bugged Home detected!')
+    Isaac.ExecuteCommand('stage 13')
+    return
+  end
+
+  if Game():GetLevel():GetStage() > LevelStage.STAGE4_2 then self:on_new_level_post_reroll() return end 
 
   --reroll variant
   local available_types = self:get_unlocked_stage_types(Game():GetLevel():GetStage(), Game():GetLevel():GetStageType())
@@ -373,7 +379,9 @@ function ProgressionManager:check_special_exits()
     if trapdoor and not Game():GetStateFlag(GameStateFlag.STATE_MAUSOLEUM_HEART_KILLED) and not self.mod.client_manager:has_unlock('Womb') and not self.mod.client_manager:has_unlock('Utero') and not self.mod.client_manager:has_unlock('Scarred Womb') then
       self.mod.dbg('Removing trapdoor to Womb and spawning trophy')
       Game():GetRoom():RemoveGridEntity(trapdoor:GetGridIndex(), 0, false)
-      Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TROPHY, 0, Game():GetRoom():GetCenterPos(), Vector.Zero, nil)
+      if Game():GetRoom():IsClear() then
+        Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TROPHY, 0, Game():GetRoom():GetCenterPos(), Vector.Zero, nil)
+      end
     end
   end
 
@@ -398,7 +406,7 @@ function ProgressionManager:check_special_exits()
       beam:Remove()
     end
 
-    if beam and trapdoor and not self.mod.client_manager:has_unlock('Sheol') and not self.mod.client_manager:has_unlock('Cathedral') then
+    if beam and trapdoor and not self.mod.client_manager:has_unlock('Sheol') and not self.mod.client_manager:has_unlock('Cathedral') and Game():GetRoom():IsClear() then
       Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TROPHY, 0, Game():GetRoom():GetCenterPos(), Vector.Zero, nil)
     end
   end
@@ -486,7 +494,9 @@ function ProgressionManager:on_pickup_init(pickup)
     local item_config = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
     local quest_item = item_config.Tags & ItemConfig.TAG_QUEST ~= 0
 
-    self.mod.dbg('Quest Item: ' .. tostring(quest_item) .. ' Ap item: ' .. tostring(pickup.SubType == ap_item_id))
+    quest_item = quest_item or (pickup.SubType == CollectibleType.COLLECTIBLE_WE_NEED_TO_GO_DEEPER) or (pickup.SubType == CollectibleType.COLLECTIBLE_RED_KEY) or (pickup.SubType == CollectibleType.COLLECTIBLE_UNDEFINED)
+
+    self.mod.dbg('Quest Item: ' .. tostring(quest_item) .. ' Ap item: ' .. tostring(pickup.SubType == ap_item_id) .. ' Drop rng: ' .. tostring(pickup:GetDropRNG():RandomInt(100)) .. ' SubType: ' .. pickup.SubType)
 
     if next_location and not quest_item and pickup.SubType ~= ap_item_id and pickup:GetDropRNG():RandomInt(100) < self.mod.client_manager.options.item_location_percentage then
       self.mod.dbg("Roll into AP")

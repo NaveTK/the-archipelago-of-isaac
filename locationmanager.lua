@@ -169,7 +169,7 @@ function LocationManager:get_main_boss()
   if Game():GetLevel():GetStage() == LevelStage.STAGE8 and Game():GetLevel():GetCurrentRoomIndex() == -10 then
     return 'Beast'
   end
-  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE7 and Game():GetLevel():GetCurrentRoom():GetRoomShape() == RoomShape.ROOMSHAPE_2x2 then
+  if Game():GetRoom():GetType() == RoomType.ROOM_BOSS and Game():GetLevel():GetStage() == LevelStage.STAGE7 and Game():GetLevel():GetCurrentRoom():GetRoomShape() == RoomShape.ROOMSHAPE_2x2 then
     return 'Delirium'
   end
   return nil
