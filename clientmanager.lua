@@ -82,7 +82,8 @@ local json = require('json')
 ---@field slot integer
 ---@field options APOptions
 ---@field scouted_locations table<integer, NetworkItem>
----@field hints Hint[]
+---@field hintable_locations integer[]
+---@field forbidden_items integer[]
 local ClientManager = {
   state = "Disconnected",
   session_id = "",
@@ -106,10 +107,6 @@ end
 ---@param code integer
 ---@param game string
 function ClientManager:get_item_name(code, game)
-  self.mod.dbg('Code ' .. tostring(code))
-  self.mod.dbg('Game ' .. game)
-  self.mod.dbg('self.item_names[game][tostring(code)] ' .. tostring(self.item_names[game][tostring(code)]))
-  self.mod.dbg('self.item_names[game][tonumber(code)] ' .. tostring(self.item_names[game][tonumber(code)]))
   return self.item_names[game][tostring(code)]
 end
 
@@ -165,6 +162,19 @@ function ClientManager:add_available_item(item, notification)
   end
 end
 
+local forbidden_items_dict = {
+  ["A Pound of Flesh"] = CollectibleType.COLLECTIBLE_POUND_OF_FLESH,
+  ["Blood Oath"] = CollectibleType.COLLECTIBLE_BLOOD_OATH,
+  ["Blood Puppy"] = CollectibleType.COLLECTIBLE_BLOOD_PUPPY,
+  ["Cursed Eye"] = CollectibleType.COLLECTIBLE_CURSED_EYE,
+  ["Curse of the Tower"] = CollectibleType.COLLECTIBLE_CURSE_OF_THE_TOWER,
+  ["Isaac's Heart"] = CollectibleType.COLLECTIBLE_ISAACS_HEART,
+  ["Kidney Stone"] = CollectibleType.COLLECTIBLE_KIDNEY_STONE,
+  ["Missing No"] = CollectibleType.COLLECTIBLE_MISSING_NO,
+  ["Shard of Glass"] = CollectibleType.COLLECTIBLE_SHARD_OF_GLASS,
+  ["TMTrainer"] = CollectibleType.COLLECTIBLE_TMTRAINER
+}
+
 ---@param cmd Command
 function ClientManager:process_mod_command(cmd)
   self.mod.dbg('Command type: ' .. cmd.type)
@@ -181,7 +191,14 @@ function ClientManager:process_mod_command(cmd)
     self.slot = cmd.payload["slot"]
     self.options = cmd.payload["options"]
     self.scouted_locations = cmd.payload["scouted_locations"]
-    self.hints = cmd.payload["hints"]
+    self.hintable_locations = cmd.payload["hintable_locations"]
+    self.forbidden_items = {}
+    for _, item in ipairs(self.options["exclude_items_as_rewards"]) do
+      table.insert(self.forbidden_items, forbidden_items_dict[item])
+    end
+    for _, item in ipairs(self.forbidden_items) do
+      self.mod.dbg(item)
+    end
     self.available_items = {}
     for _, item in ipairs(self.received_items) do
       self:add_available_item(item, false)
@@ -201,6 +218,12 @@ function ClientManager:process_mod_command(cmd)
       self:add_available_item(item, true)
     end
     self.mod.item_manager:give_items()
+  end
+  if cmd.type == "HintableLocations" then
+    self.hintable_locations = cmd.payload
+  end
+  if cmd.type == "Kill" then
+    Isaac.GetPlayer():Kill()
   end
 end
 
@@ -238,21 +261,26 @@ function ClientManager:get_item_location(stage)
   return nil
 end
 
+function ClientManager:is_missing(id)
+  if id then
+    return valueInList(id, self.missing_locations)
+  end
+  return false
+end
+
 ---@param names string[]
 function ClientManager:unlock_locations(names)
   local loc_ids = {}
   for _, name in ipairs(names) do
     local id = self:get_location_id(name)
-    if id then
-      if valueInList(id, self.missing_locations) then
-        removeValueFromList(id, self.missing_locations)
-        table.insert(self.checked_locations, id)
-        table.insert(loc_ids, id)
-        local item = self.scouted_locations[tostring(id)]
-        if item.player ~= self.slot then
-          local item_name = self:get_item_name(item.item, self:get_game_name(item.player))
-          self.mod.notification_manager:show_message('Sent ' .. item_name, 'To ' .. self:get_player_name(item.player))
-        end
+    if self:is_missing(id) then
+      removeValueFromList(id, self.missing_locations)
+      table.insert(self.checked_locations, id)
+      table.insert(loc_ids, id)
+      local item = self.scouted_locations[tostring(id)]
+      if item.player ~= self.slot then
+        local item_name = self:get_item_name(item.item, self:get_game_name(item.player))
+        self.mod.notification_manager:show_message('Sent ' .. item_name, 'To ' .. self:get_player_name(item.player))
       end
     end
   end
@@ -347,7 +375,17 @@ function ClientManager:on_post_render()
 
   if Isaac.GetFrameCount() % 6 == 0 and self.mod:HasData() then
     self:poll()
+  elseif Isaac.GetFrameCount() % 6 == 0 and not self.mod:HasData() then
+      self:connection_request()
   end
+end
+
+function ClientManager:send_death()
+  self.mod.dbg("Send death")
+  table.insert(self.commands_to_be_sent, {
+    type = "Died",
+    payload = nil
+  })
 end
 
 function ClientManager:update_run_info()
@@ -373,6 +411,20 @@ function ClientManager:send_goal(boss)
       }
     })
   end
+end
+
+function ClientManager:send_hint()
+  self.mod.dbg("Send random hint")
+  local idx = math.random(#self.hintable_locations)
+  local loc = self.hintable_locations[idx]
+  self.mod.dbg(idx .. '/' .. #self.hintable_locations .. ': Location ' .. loc)
+  local item = self.scouted_locations[tostring(loc)]
+  self.mod.notification_manager.queue_timer = 2
+  self.mod.notification_manager:show_fortune(self:get_player_name(item.player) .. "'s " .. self:get_item_name(item.item, self:get_game_name(item.player)), self:get_location_name(item.location))
+  table.insert(self.commands_to_be_sent, {
+      type = "HintLocations",
+      payload = { loc }
+    })
 end
 
 ---@param mod ModReference

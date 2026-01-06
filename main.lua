@@ -27,19 +27,6 @@ end
 
 --[=[
 
-function mod:onPostUpdate()
-  for idx, ref in pairs(played_fortune_machines) do
-    local machine = ref.Entity
-    if machine:GetSprite():IsEventTriggered('Prize') then
-      played_fortune_machines[idx] = nil
-      mod:dbg('Fortune machine popped!')
-      local random_location = ap.missing_locations[rng:RandomInt(#ap.missing_locations) + 1]
-      ap:LocationScouts({random_location}, true)
-    end
-  end
-
-end
-
 ---@param entity Entity
 ---@param entity_type EntityType
 function mod:onEntityKill(entity, entity_type)
@@ -62,19 +49,6 @@ function mod:onEntityKill(entity, entity_type)
 
 end
 
-function mod:backToMenu()
-  newRun = true
-end
-
----@param entity_npc EntityNPC
----@param collider Entity
-function mod:onFortuneTellingMachine(entity_npc, collider)
-  if collider.Type == EntityType.ENTITY_SLOT and collider.Variant == 3 then
-    mod:dbg('Collision with ' .. collider.Type .. '_' .. collider.SubType .. '_' .. collider.Variant)
-    local ref = EntityRef(collider)
-    played_fortune_machines[collider.Index] = ref
-  end
-end
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, mod.onPostUpdate)
 mod:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, mod.onEntityKill)

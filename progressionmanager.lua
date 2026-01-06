@@ -102,7 +102,7 @@ function ProgressionManager:get_unlocked_stage_types(currentStage, currentStageT
     if currentStageType == StageType.STAGETYPE_REPENTANCE or currentStageType == StageType.STAGETYPE_REPENTANCE_B then --Womb/Utero/Scarred Womb
     -- nothing
     else --Womb/Utero/Scarred Womb
-      if self:has_unlock('Womb') then
+      if self:has_unlock('Womb') or self:has_unlock('We Need To Go Deeper!') then
         table.insert(available_types, StageType.STAGETYPE_ORIGINAL)
       end
       if self:has_unlock('Utero') then

@@ -1,7 +1,8 @@
 ---@class LocationManager
 ---@field mod ModReference
+---@field played_fortune_machines table<integer, EntityRef>
 local LocationManager = {
-    
+    played_fortune_machines = {}
 }
 
 local chapter_room_names = {
@@ -47,38 +48,83 @@ local chapter_names = {
   [LevelStage.STAGE8] = 'Chapter 8'
 }
 
-function LocationManager:unlock_location()
-  local roomType = Game():GetRoom():GetType()
+---@param room_type integer
+---@param room_index integer
+function LocationManager:get_location_name(room_type, room_index)
   local location_name = nil
-  if stage_room_names[roomType] then
-    location_name = self.mod.progression_manager:get_current_stage_name() .. ' - ' .. stage_room_names[roomType]
+  if stage_room_names[room_type] then
+    location_name = self.mod.progression_manager:get_current_stage_name() .. ' - ' .. stage_room_names[room_type]
   end
-  if chapter_room_names[roomType] then
-    location_name = chapter_names[Game():GetLevel():GetStage()] .. ' - ' .. chapter_room_names[roomType]
+  if chapter_room_names[room_type] then
+    location_name = chapter_names[Game():GetLevel():GetStage()] .. ' - ' .. chapter_room_names[room_type]
   end
-  if Game():GetLevel():GetCurrentRoomIndex() == 94 and Game():GetLevel():GetStage() == LevelStage.STAGE8 then
+  if room_index == 94 and Game():GetLevel():GetStage() == LevelStage.STAGE8 then
     location_name = 'Home - Closet'
   end
   if Game():GetLevel():GetStateFlag(LevelStateFlag.STATE_MINESHAFT_ESCAPE) then
     location_name = 'The Escape - Knife Piece'
   end
-  if roomType == RoomType.ROOM_BOSSRUSH then
+  if room_type == RoomType.ROOM_BOSSRUSH then
     location_name = 'Boss Rush - Boss Room'
   end
-  if Game():GetLevel():GetCurrentRoomIndex() == -7 and Game():GetLevel():GetStage() == LevelStage.STAGE6 then
+  if room_index == -7 and Game():GetLevel():GetStage() == LevelStage.STAGE6 then
     location_name = 'Mega Satan - Boss Room'
   end
-  if Game():GetLevel():GetCurrentRoomIndex() == -10 and Game():GetLevel():GetStage() == LevelStage.STAGE8 then
+  if room_index == -10 and Game():GetLevel():GetStage() == LevelStage.STAGE8 then
     location_name = 'Home - Boss Room'
   end
+  return location_name
+end
+
+function LocationManager:unlock_location()
+  local location_name = self:get_location_name(Game():GetRoom():GetType(), Game():GetLevel():GetCurrentRoomIndex())
   self.mod.dbg('Current location name: ' .. tostring(location_name))
   if not location_name then return end
   self.mod.client_manager:unlock_locations({location_name})
+  if Game():GetLevel():GetCurrentRoomDesc().SurpriseMiniboss then
+    location_name = self.mod.progression_manager:get_current_stage_name() .. ' - Miniboss Room'
+    self.mod.client_manager:unlock_locations({location_name})
+  end
 end
 
 function LocationManager:enter_room()
   if Game():GetRoom():IsClear() and Game():GetRoom():GetType() ~= RoomType.ROOM_CHALLENGE and Game():GetRoom():GetType() ~= RoomType.ROOM_BOSSRUSH and not (Game():GetLevel():GetCurrentRoomIndex() == -7 and Game():GetLevel():GetStage() == LevelStage.STAGE7) then
     self:unlock_location()
+  end
+
+  for slot=0,DoorSlot.NUM_DOOR_SLOTS-1 do
+    local door = Game():GetRoom():GetDoor(slot)
+    if door then
+      local location = self:get_location_name(door.TargetRoomType, door.TargetRoomIndex)
+      if location then
+        local id = self.mod.client_manager:get_location_id(location)
+        if self.mod.client_manager:is_missing(id) then
+          self:show_ap_on_door(door)
+        end
+      end
+    end
+  end
+end
+
+---@param door GridEntityDoor?
+function LocationManager:show_ap_on_door(door)
+  if not door then return end
+  if door:GetSprite():GetAnimation() == "Hidden" then return end
+
+  local dir_offsets = {
+    [Direction.DOWN] = Vector(8, 35),
+    [Direction.LEFT] = Vector(-23, 6),
+    [Direction.RIGHT] = Vector(36, 6),
+    [Direction.UP] = Vector(8, -23),
+    [Direction.NO_DIRECTION] = Vector.Zero
+  }
+
+  local ap_icon = Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.LADDER, 0, door.Position + dir_offsets[door.Direction], Vector.Zero, nil):ToEffect()
+  if ap_icon then
+    ap_icon:GetSprite():LoadGraphics()
+    ap_icon:GetSprite():ReplaceSpritesheet(0, "gfx/Items/Collectibles/ap_icon_small.png")
+    ap_icon:GetSprite():LoadGraphics()
+    ap_icon:SetTimeout(-1)
   end
 end
 
@@ -171,6 +217,31 @@ function LocationManager:on_post_update()
       self.mod.client_manager:unlock_locations({location})
     end
   end
+
+  for idx, ref in pairs(self.played_fortune_machines) do
+    local machine = ref.Entity
+    if machine:GetSprite():IsEventTriggered('Prize') then
+      self.played_fortune_machines[idx] = nil
+      self.mod.dbg('Fortune machine popped!')
+      if math.random(100) <= self.mod.client_manager.options["fortune_machine_hint_percentage"] then
+        self.mod.client_manager:send_hint()
+      end
+    end
+  end
+end
+
+function LocationManager:on_crystal_ball_use()
+  self.mod.dbg('Crystal ball used!')
+  if math.random(100) <= self.mod.client_manager.options["crystal_ball_hint_percentage"] then
+    self.mod.client_manager:send_hint()
+  end
+end
+
+function LocationManager:on_fortune_cookie_use()
+  self.mod.dbg('Crystal ball used!')
+  if math.random(100) <= self.mod.client_manager.options["fortune_cookie_hint_percentage"] then
+    self.mod.client_manager:send_hint()
+  end
 end
 
 function LocationManager:on_run_ended(lost)
@@ -197,6 +268,10 @@ function LocationManager:on_run_ended(lost)
   self.mod.client_manager.run_info.discarded_items = {}
   self.mod.client_manager:update_run_info()
 
+  if lost then
+    self.mod.client_manager:send_death()
+  end
+
   self.mod.client_manager:send_commands()
 end
 
@@ -210,6 +285,16 @@ function LocationManager:on_pickup_collision(entity_pickup, collider)
   end
 end
 
+---@param entity_npc EntityNPC
+---@param collider Entity
+function LocationManager:on_fortune_telling_machine(entity_npc, collider)
+  if collider.Type == EntityType.ENTITY_SLOT and collider.Variant == 3 then
+    self.mod.dbg('Collision with ' .. collider.Type .. '_' .. collider.SubType .. '_' .. collider.Variant)
+    local ref = EntityRef(collider)
+    self.played_fortune_machines[collider.Index] = ref
+  end
+end
+
 ---@param mod ModReference
 function LocationManager:Init(mod)
   self.mod = mod
@@ -219,6 +304,9 @@ function LocationManager:Init(mod)
   mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() self:on_post_update() end)
   mod:AddCallback(ModCallbacks.MC_POST_GAME_END, function(_, lost) self:on_run_ended(lost) end)
   mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, function(_, entity_pickup, collider) self:on_pickup_collision(entity_pickup, collider) end)
+  mod:AddCallback(ModCallbacks.MC_PRE_PLAYER_COLLISION, function(_, entity_npc, collider) self:on_fortune_telling_machine(entity_npc, collider) end)
+  mod:AddCallback(ModCallbacks.MC_USE_ITEM, function() self:on_crystal_ball_use() end, CollectibleType.COLLECTIBLE_CRYSTAL_BALL)
+  mod:AddCallback(ModCallbacks.MC_USE_ITEM, function() self:on_fortune_cookie_use() end, CollectibleType.COLLECTIBLE_FORTUNE_COOKIE)
 end
 
 return LocationManager

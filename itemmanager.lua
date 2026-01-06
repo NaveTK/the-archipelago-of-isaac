@@ -277,7 +277,7 @@ function ItemManager:give_next()
   if self.trap_queue.size > 0 then
     local trap = self.trap_queue:pop()
     self.mod.dbg('Activating trap: ' .. trap)
-    if trap == 'Curse Trap' then
+    if trap == 'Curse Trap' and not Isaac.GetPlayer():HasCollectible(CollectibleType.COLLECTIBLE_BLACK_CANDLE) then
       local curses = {LevelCurse.CURSE_OF_BLIND, LevelCurse.CURSE_OF_DARKNESS, LevelCurse.CURSE_OF_THE_UNKNOWN, LevelCurse.CURSE_OF_THE_LOST}
       Game():GetLevel():AddCurse(curses[rng:RandomInt(4) + 1], false)
       rng:Next()
