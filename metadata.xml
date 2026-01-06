@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metadata>
-    <name>the archipelago of isaac</name>
+    <name>The Archipelago of Isaac</name>
     <directory>the archipelago of isaac</directory>
     <id>3640861678</id>
-    <description></description>
-    <version>1.1</version>
-    <visibility>Private</visibility>
+    <description>This is the Archipelago integration for The Binding of Isaac Repentance.
+
+Archipelago is a cross-game modification system which randomizes different games, then uses the result to build a single unified multi-player game. Items from one game may be present in another, and you will need your fellow players to find items you need in their games to help you complete your own.</description>
+    <version>1.2</version>
+    <visibility>Public</visibility>
     <tag id="Tweaks"/>
 </metadata>
