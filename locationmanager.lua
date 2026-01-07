@@ -193,13 +193,15 @@ local boss_rewards = {
 function LocationManager:room_cleared()
   local boss = self:get_main_boss()
   if boss then
-    local locations = {}
-    for i = 1, boss_rewards[boss]+1 do
-      table.insert(locations, boss .. ' Reward #' .. tostring(i))
-    end
+    if self.mod.client_manager.options.additional_boss_rewards then
+      local locations = {}
+      for i = 1, boss_rewards[boss]+1 do
+        table.insert(locations, boss .. ' Reward #' .. tostring(i))
+      end
 
+      self.mod.client_manager:unlock_locations(locations)
+    end
     self.mod.client_manager:send_goal(boss)
-    self.mod.client_manager:unlock_locations(locations)
   end
   self:unlock_location()
 end
@@ -223,7 +225,7 @@ function LocationManager:on_post_update()
     if machine:GetSprite():IsEventTriggered('Prize') then
       self.played_fortune_machines[idx] = nil
       self.mod.dbg('Fortune machine popped!')
-      if math.random(100) <= self.mod.client_manager.options["fortune_machine_hint_percentage"] then
+      if math.random(100) <= self.mod.client_manager.options.fortune_machine_hint_percentage then
         self.mod.client_manager:send_hint()
       end
     end
@@ -232,14 +234,14 @@ end
 
 function LocationManager:on_crystal_ball_use()
   self.mod.dbg('Crystal ball used!')
-  if math.random(100) <= self.mod.client_manager.options["crystal_ball_hint_percentage"] then
+  if math.random(100) <= self.mod.client_manager.options.crystal_ball_hint_percentage then
     self.mod.client_manager:send_hint()
   end
 end
 
 function LocationManager:on_fortune_cookie_use()
   self.mod.dbg('Crystal ball used!')
-  if math.random(100) <= self.mod.client_manager.options["fortune_cookie_hint_percentage"] then
+  if math.random(100) <= self.mod.client_manager.options.fortune_cookie_hint_percentage then
     self.mod.client_manager:send_hint()
   end
 end
@@ -248,18 +250,20 @@ function LocationManager:on_run_ended(lost)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
 
   self.mod.dbg('Run result, lost: ' .. tostring(lost))
-  local unspawned_locations = self.mod.client_manager.run_info.unspawned_locations
-  local locations = {}
-  self.mod.dbg('Unspawned Locations:')
-  for floor, rooms in pairs(unspawned_locations) do
-    self.mod.dbg('  ' .. floor .. ':')
-    for _, room in ipairs(rooms) do
-      self.mod.dbg('    ' .. room)
-      table.insert(locations, floor .. ' - ' .. room)
+  if self.mod.client_manager.options.bad_rng_protection then
+    local unspawned_locations = self.mod.client_manager.run_info.unspawned_locations
+    local locations = {}
+    self.mod.dbg('Unspawned Locations:')
+    for floor, rooms in pairs(unspawned_locations) do
+      self.mod.dbg('  ' .. floor .. ':')
+      for _, room in ipairs(rooms) do
+        self.mod.dbg('    ' .. room)
+        table.insert(locations, floor .. ' - ' .. room)
+      end
     end
-  end
-  if not lost then
-    self.mod.client_manager:unlock_locations(locations)
+    if not lost then
+      self.mod.client_manager:unlock_locations(locations)
+    end
   end
 
   self.mod.client_manager.run_info.is_active = false

@@ -20,16 +20,16 @@
 ---@field game string
 
 ---@class APOptions
----@field deathlink integer
----@field scatter_previous_items integer
----@field fortunes_are_hints integer
----@field additional_boss_rewards integer
+---@field bad_rng_protection boolean
+---@field scatter_previous_items boolean
+---@field additional_boss_rewards boolean
 ---@field retain_one_ups_percentage integer
 ---@field retain_items_percentage integer
 ---@field retain_junk_percentage integer
 ---@field item_location_percentage integer
---@field win_collects_missed_locations integer
---@field additional_item_locations integer
+---@field fortune_machine_hint_percentage integer
+---@field crystal_ball_hint_percentage integer
+---@field fortune_cookie_hint_percentage integer
 
 ---@class Hint
 ---@field receiving_player integer
@@ -40,6 +40,10 @@
 ---@field entrance string
 ---@field item_flags integer
 ---@field status integer
+
+---@class NetworkItem
+---@field player integer
+---@field item integer
 
 ---@param t table
 ---@return Command

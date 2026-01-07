@@ -57,9 +57,9 @@ function ItemManager:init_new_run()
   total_items = shuffle(total_items)
   total_junk = shuffle(total_junk)
 
-  local retained_item_amount = math.ceil((#total_items * options['retain_items_percentage']) / 100.0)
-  local retained_junk_amount = math.ceil((#total_junk * options['retain_junk_percentage']) / 100.0)
-  local retained_one_up_amount = math.ceil((#total_one_ups * options['retain_one_ups_percentage']) / 100.0)
+  local retained_item_amount = math.ceil((#total_items * options.retain_items_percentage) / 100.0)
+  local retained_junk_amount = math.ceil((#total_junk * options.retain_junk_percentage) / 100.0)
+  local retained_one_up_amount = math.ceil((#total_one_ups * options.retain_one_ups_percentage) / 100.0)
 
   self.mod.dbg('Items: ')
   for i, item in ipairs(total_items) do
