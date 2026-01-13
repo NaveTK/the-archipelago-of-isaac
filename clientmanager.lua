@@ -183,6 +183,7 @@ local forbidden_items_dict = {
 function ClientManager:process_mod_command(cmd)
   self.mod.dbg('Command type: ' .. cmd.type)
   if cmd.type == "AllData" then
+    self.mod.dbg("AllData")
     self.session_id = cmd.payload["session_id"]
     self.run_info = cmd.payload["run_info"]
     self.goals = cmd.payload["goals"]
@@ -327,7 +328,8 @@ function ClientManager:connection_request()
   local init_save_data = SaveData({
     actor = "mod",
     timestamp = Isaac.GetTime(),
-    commands = { Command({type = "RequestAll"}) }
+    commands = { Command({type = "RequestAll"}) },
+    session_id = self.session_id
   })
 
   self.mod:SaveData(json.encode(init_save_data))
@@ -335,14 +337,15 @@ end
 
 function ClientManager:poll()
     --if Game():IsPaused() then return end
+
     local success, js = pcall(function() return json.decode(self.mod:LoadData()) end)
-    if not success then return end
+    if not success then self.mod.dbg(tostring(js)) return end
 
     local save_data = SaveData(js)
 
     if save_data.session_id ~= self.session_id then
-      self:connection_request()
       self.session_id = save_data.session_id
+      self:connection_request()
       return
     end
     if save_data.actor == "mod" and Isaac.GetTime() - save_data.timestamp > 3000 then self.state = "Disconnected" return end
