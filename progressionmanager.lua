@@ -186,7 +186,7 @@ function ProgressionManager:on_new_level()
   self.mod.dbg("On new level")
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active or self.new_run then return end
 
-  if Game():GetLevel():GetStage() == LevelStage.STAGE8 and Game():GetLevel():GetStageType() == StageType.STAGETYPE_WOTL and Game():GetLevel():GetStartingRoomIndex() == Game():GetLevel():GetCurrentRoomIndex() then
+  if Game():GetLevel():GetStage() == LevelStage.STAGE8 and Game():GetLevel():GetStageType() >= StageType.STAGETYPE_WOTL and Game():GetLevel():GetStartingRoomIndex() == Game():GetLevel():GetCurrentRoomIndex() then
     self.mod.dbg('Bugged Home detected!')
     Isaac.ExecuteCommand('stage 13')
     return
@@ -228,6 +228,7 @@ function ProgressionManager:on_new_level()
     Game():GetLevel():SetStage(Game():GetLevel():GetStage(), level)
     Isaac.ExecuteCommand('reseed')
     self.mod.dbg("Post reseed")
+    return
   end
   self:on_new_level_post_reroll()
 end
