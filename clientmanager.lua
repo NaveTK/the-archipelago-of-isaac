@@ -299,6 +299,13 @@ function ClientManager:unlock_locations(names)
 end
 
 ---@param item string
+function ClientManager:count_received_item(item)
+  if not self.run_info.received_items then return 0 end
+  if not self.run_info.received_items[item] then return 0 end
+  return self.run_info.received_items[item]
+end
+
+---@param item string
 ---@param amount integer
 function ClientManager:add_received_item(item, amount)
   if not self.run_info.received_items then self.run_info.received_items = {} end

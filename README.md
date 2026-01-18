@@ -15,15 +15,17 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 ### Changes
 - [ ] Merge with limeslime secret-based system for asyncs
 - [ ] Option to assign a set of characters to each individual goal
-- [ ] Option to define a X out of Y goal definition
+- [x] ~~Option to define a X out of Y goal definition~~
 - [ ] Option on how to handle out-of-logic checks through sequence breaking (Block, None, All, Store)
-- [ ] Option to disable super rare rooms from logic
-- [ ] Option to disable floor variation splits
-- [ ] Option to configure death link severity
+- [x] ~~Option to define behavior of rng rooms~~
+- [x] ~~Option to disable super rare rooms from logic~~
+- [x] Option to disable floor variation splits
+- [x] Option to configure death link severity
 - [ ] Item groups and location groups
 - [ ] Bosssanity
 - [ ] Monstersanity
-- [ ] Progressive Mapping unlocks
+- [x] Progressive Mapping unlocks
+- [x] Permanent stat ups
 
 ### Bugs
 - [ ] Victory runs shouldn't count

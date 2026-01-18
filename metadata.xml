@@ -5,8 +5,15 @@
     <id>3640861678</id>
     <description>This is the Archipelago integration for The Binding of Isaac Repentance.
 
-Archipelago is a cross-game modification system which randomizes different games, then uses the result to build a single unified multi-player game. Items from one game may be present in another, and you will need your fellow players to find items you need in their games to help you complete your own.</description>
-    <version>1.3</version>
+Archipelago is a cross-game modification system which randomizes different games, then uses the result to build a single unified multi-player game. Items from one game may be present in another, and you will need your fellow players to find items you need in their games to help you complete your own.
+
+Documentation:
+https://github.com/NaveTK/Archipelago/blob/main/worlds/tboir/docs/en_The%20Binding%20of%20Isaac%20Repentance.md
+Setup Guide:
+https://github.com/NaveTK/Archipelago/blob/main/worlds/tboir/docs/setup_en.md
+AP-World Download:
+https://github.com/NaveTK/Archipelago/releases/latest</description>
+    <version>1.6</version>
     <visibility>Public</visibility>
     <tag id="Tweaks"/>
 </metadata>

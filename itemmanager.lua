@@ -37,6 +37,7 @@ function ItemManager:init_new_run()
   local total_items = {}
   local total_junk = {}
   local total_one_ups = {}
+  local misc_items = {}
 
   for item, amount in pairs(available_items) do
     if not item:find('Unlock$') and not item:find('Trap$') then
@@ -49,6 +50,9 @@ function ItemManager:init_new_run()
         end
         if item == '1-UP' then
           table.insert(total_one_ups, item)
+        end
+        if item:find('^Progressive') or item:find('^Permanent') then
+          table.insert(misc_items, item)
         end
       end
     end
@@ -100,6 +104,12 @@ function ItemManager:init_new_run()
       self.mod.client_manager:add_discarded_item(item, 1)
     end
   end
+  self.mod.dbg('Misc items: ')
+  for i, item in ipairs(misc_items) do
+    self.mod.dbg('  ' .. item)
+    self.mod.client_manager:add_to_be_distributed(1, item, 1)
+    self.mod.dbg('  Added to floor ' .. 1)
+  end
 
   if self.mod.client_manager:has_unlock('We Need To Go Deeper!') then
     self.give_queue:push(CollectibleType.COLLECTIBLE_WE_NEED_TO_GO_DEEPER)
@@ -112,6 +122,11 @@ function ItemManager:init_new_run()
   end
   if self.mod.client_manager:has_unlock('Red Key') then
     self.give_queue:push(CollectibleType.COLLECTIBLE_RED_KEY)
+  end
+
+  if self.mod.client_manager.options[''] > 0 then
+      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_RANGE | CacheFlag.CACHE_SPEED | CacheFlag.CACHE_LUCK)
+      Isaac.GetPlayer():EvaluateItems()
   end
 end
 
@@ -169,6 +184,31 @@ function ItemManager:give_item(itemType)
       self.consumable_queue:push(PickupVariant.PICKUP_TRINKET)
     elseif itemType:find('Chest$') then
       self.consumable_queue:push(PickupVariant.PICKUP_CHEST)
+    end
+  elseif itemType == 'Progressive Map Upgrade' then
+    if self.mod.client_manager:count_received_item(itemType) == 0 then
+      self.give_queue:push(CollectibleType.COLLECTIBLE_TREASURE_MAP)
+    elseif self.mod.client_manager:count_received_item(itemType) == 1 then
+      self.give_queue:push(CollectibleType.COLLECTIBLE_COMPASS)
+    elseif self.mod.client_manager:count_received_item(itemType) == 2 then
+      self.give_queue:push(CollectibleType.COLLECTIBLE_BLUE_MAP)
+    end
+  elseif itemType:find('^Permanent') then
+    if itemType:find('Damage') then
+      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_DAMAGE)
+      Isaac.GetPlayer():EvaluateItems()
+    elseif itemType:find('Tears') then
+      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
+      Isaac.GetPlayer():EvaluateItems()
+    elseif itemType:find('Range') then
+      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_RANGE)
+      Isaac.GetPlayer():EvaluateItems()
+    elseif itemType:find('Speed') then
+      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_SPEED)
+      Isaac.GetPlayer():EvaluateItems()
+    elseif itemType:find('Luck') then
+      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_LUCK)
+      Isaac.GetPlayer():EvaluateItems()
     end
   else
     self.mod.dbg('Unknown item type: ' .. itemType)
@@ -319,11 +359,42 @@ function ItemManager:on_post_update()
   end
 end
 
+
+function ItemManager:on_evaluate_damage(player, flag)
+  local mult = self.mod.client_manager:count_received_item('Permanent Damage Up') - self.mod.client_manager.options['start_out_nerfed']
+  player.Damage = player.Damage + 0.6 * mult
+end
+
+function ItemManager:on_evaluate_tears(player, flag)
+  local mult = self.mod.client_manager:count_received_item('Permanent Tears Up') - self.mod.client_manager.options['start_out_nerfed']
+  player.MaxFireDelay = player.MaxFireDelay + 0.35 * mult
+end
+
+function ItemManager:on_evaluate_range(player, flag)
+  local mult = self.mod.client_manager:count_received_item('Permanent Range Up') - self.mod.client_manager.options['start_out_nerfed']
+  player.TearRange = player.TearRange + (1.25 * 40) * mult
+end
+
+function ItemManager:on_evaluate_speed(player, flag)
+  local mult = self.mod.client_manager:count_received_item('Permanent Speed Up') - self.mod.client_manager.options['start_out_nerfed']
+  player.Speed = player.Speed + 0.15 * mult
+end
+
+function ItemManager:on_evaluate_luck(player, flag)
+  local mult = self.mod.client_manager:count_received_item('Permanent Luck Up') - self.mod.client_manager.options['start_out_nerfed']
+  player.Luck = player.Luck + 1 * mult
+end
+
 ---@param mod ModReference
 function ItemManager:Init(mod)
   self.mod = mod
 
   mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() self:on_post_update() end)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_damage(player, flag) end, CacheFlag.CACHE_DAMAGE)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_tears(player, flag) end, CacheFlag.CACHE_FIREDELAY)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_range(player, flag) end, CacheFlag.CACHE_RANGE)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_speed(player, flag) end, CacheFlag.CACHE_SPEED)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_luck(player, flag) end, CacheFlag.CACHE_LUCK)
 end
 
 return ItemManager
