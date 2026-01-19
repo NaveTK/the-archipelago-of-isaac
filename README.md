@@ -20,18 +20,17 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [x] ~~Option to define behavior of rng rooms~~
 - [x] ~~Option to disable super rare rooms from logic~~
 - [x] ~~Option to disable floor variation splits~~
-- [x] Option to configure death link severity
+- [x] ~~Option to configure death link severity~~
 - [ ] Item groups and location groups
 - [ ] Bosssanity
 - [ ] Monstersanity
-- [x] Progressive Mapping unlocks
+- [x] ~~Progressive Mapping unlocks~~
 - [x] ~~Permanent stat ups~~
 
 ### Bugs
 - [ ] Victory runs shouldn't count
 - [ ] Lost soul sometimes gives rewards even if it died last floor
-- [ ] Active items have a chance to be replaced with AP items when dropped
-- [ ] AP Items are not sent out when picked up by Esau
-- [ ] AP Items don't revert to their original items if all AP items are exhausted for floor
+- [x] ~~Active items have a chance to be replaced with AP items when dropped~~
+- [x] ~~AP Items are not sent out when picked up by Esau~~
+- [x] ~~AP Items don't revert to their original items if all AP items are exhausted for floor~~
 - [ ] Portals/Trapdoors/Exits don't respawn if location is sent after they have already been removed
-- [ ] Remove unlocks from pool if set as starting items

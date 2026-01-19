@@ -187,11 +187,11 @@ function ItemManager:give_item(itemType)
       self.consumable_queue:push(PickupVariant.PICKUP_CHEST)
     end
   elseif itemType == 'Progressive Map Upgrade' then
-    if self.mod.client_manager:count_received_item(itemType) == 0 then
+    if self.mod.client_manager:count_received_item(itemType) == 1 then
       self.give_queue:push(CollectibleType.COLLECTIBLE_TREASURE_MAP)
-    elseif self.mod.client_manager:count_received_item(itemType) == 1 then
-      self.give_queue:push(CollectibleType.COLLECTIBLE_COMPASS)
     elseif self.mod.client_manager:count_received_item(itemType) == 2 then
+      self.give_queue:push(CollectibleType.COLLECTIBLE_COMPASS)
+    elseif self.mod.client_manager:count_received_item(itemType) == 3 then
       self.give_queue:push(CollectibleType.COLLECTIBLE_BLUE_MAP)
     end
   elseif itemType:find('^Permanent') then
@@ -363,7 +363,6 @@ end
 function ItemManager:on_evaluate_damage(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
 
-  self.mod.dbg("on_evaluate_damage")
   local mult = self.mod.client_manager:count_received_item('Permanent Damage Up') - self.mod.client_manager.options.start_out_nerfed
   player.Damage = player.Damage + 0.6 * mult
 end
@@ -371,7 +370,6 @@ end
 function ItemManager:on_evaluate_tears(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   
-  self.mod.dbg("on_evaluate_tears")
   local mult = self.mod.client_manager:count_received_item('Permanent Tears Up') - self.mod.client_manager.options.start_out_nerfed
   player.MaxFireDelay = 30/(30/(player.MaxFireDelay+1) + 0.35 * mult)-1
 end
@@ -379,7 +377,6 @@ end
 function ItemManager:on_evaluate_range(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   
-  self.mod.dbg("on_evaluate_range")
   local mult = self.mod.client_manager:count_received_item('Permanent Range Up') - self.mod.client_manager.options.start_out_nerfed
   player.TearRange = player.TearRange + (1.25 * 40) * mult
 end
@@ -387,7 +384,6 @@ end
 function ItemManager:on_evaluate_speed(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   
-  self.mod.dbg("on_evaluate_speed")
   local mult = self.mod.client_manager:count_received_item('Permanent Speed Up') - self.mod.client_manager.options.start_out_nerfed
   player.MoveSpeed = player.MoveSpeed + 0.15 * mult
 end
@@ -395,7 +391,6 @@ end
 function ItemManager:on_evaluate_luck(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   
-  self.mod.dbg("on_evaluate_luck")
   local mult = self.mod.client_manager:count_received_item('Permanent Luck Up') - self.mod.client_manager.options.start_out_nerfed
   player.Luck = player.Luck + 1 * mult
 end

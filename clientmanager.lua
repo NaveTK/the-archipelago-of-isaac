@@ -33,6 +33,7 @@
 ---@field start_out_nerfed integer
 ---@field exclude_items_as_rewards string[]
 ---@field floor_variations boolean
+---@field death_link_severity integer
 
 ---@class Hint
 ---@field receiving_player integer
@@ -231,7 +232,13 @@ function ClientManager:process_mod_command(cmd)
     self.hintable_locations = cmd.payload
   end
   if cmd.type == "Kill" then
-    Isaac.GetPlayer():Kill()
+    if self.options.death_link_severity == 0 and not Isaac.GetPlayer():IsInvincible() then
+      Isaac.GetPlayer():TakeDamage(4, DamageFlag.DAMAGE_TIMER, EntityRef(Isaac.GetPlayer()), 0)
+    elseif self.options.death_link_severity == 1 and not Isaac.GetPlayer():IsInvincible() then
+      Isaac.GetPlayer():Kill()
+    else
+      Game():End(1)
+    end
   end
 end
 

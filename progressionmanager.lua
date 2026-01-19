@@ -454,10 +454,10 @@ function ProgressionManager:check_special_exits()
 end
 
 function ProgressionManager:enter_room()
+  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   self.mod.dbg('Current stage: ' .. self:get_current_stage_name())
   self.mod.dbg('Current Room Index: ' .. Game():GetLevel():GetCurrentRoomIndex())
   self.mod.dbg('Current Room Shape: ' .. Game():GetLevel():GetCurrentRoom():GetRoomShape())
-  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   self:check_special_exits()
 end
 
@@ -480,6 +480,7 @@ local ap_item_id = Isaac.GetItemIdByName('AP Item')
 ---@param pickup EntityPickup
 function ProgressionManager:on_pickup_init(pickup)
   self.mod.dbg('Pickup Init: ' .. tostring(pickup.Type) .. '.' .. tostring(pickup.Variant) .. '.' .. tostring(pickup.SubType))
+  self.mod.dbg(tostring(pickup.Touched))
   if pickup.Type == EntityType.ENTITY_PICKUP and pickup.Variant == PickupVariant.PICKUP_COLLECTIBLE then
     self.mod.dbg('Pickup Reroll Consider')
     local next_location = self.mod.client_manager:get_item_location(self:get_current_stage_name())
@@ -524,6 +525,18 @@ function ProgressionManager:on_pickup_init(pickup)
   end
 end
 
+---@param pickup EntityPickup
+---@param collider Entity
+function ProgressionManager:on_pre_pickup(pickup, collider)
+  local player = collider:ToPlayer()
+  if pickup.Variant == PickupVariant.PICKUP_COLLECTIBLE and pickup.SubType > 0 and player then
+    if Isaac.GetItemConfig():GetCollectible(pickup.SubType).Type == ItemType.ITEM_ACTIVE and player:GetActiveItem() > 0 and not player:IsHoldingItem() then
+        self.mod.dbg('LOCK ITEM SET TO TRUE!')
+        self.mod.item_manager.lock_item = true
+    end
+  end
+end
+
 ---@param mod ModReference
 function ProgressionManager:Init(mod)
   self.mod = mod
@@ -534,6 +547,7 @@ function ProgressionManager:Init(mod)
   mod:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, function() self:room_cleared() end)
   mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, function(_, pickup) self:on_pickup_init(pickup) end)
   mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function() self:on_new_level() end)
+  mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, function(_, pickup, collider) self:on_pre_pickup(pickup, collider) end)
 end
 
 return ProgressionManager
