@@ -30,6 +30,9 @@
 ---@field fortune_machine_hint_percentage integer
 ---@field crystal_ball_hint_percentage integer
 ---@field fortune_cookie_hint_percentage integer
+---@field start_out_nerfed integer
+---@field exclude_items_as_rewards string[]
+---@field floor_variations boolean
 
 ---@class Hint
 ---@field receiving_player integer
@@ -198,7 +201,7 @@ function ClientManager:process_mod_command(cmd)
     self.scouted_locations = cmd.payload["scouted_locations"]
     self.hintable_locations = cmd.payload["hintable_locations"]
     self.forbidden_items = {}
-    for _, item in ipairs(self.options["exclude_items_as_rewards"]) do
+    for _, item in ipairs(self.options.exclude_items_as_rewards) do
       table.insert(self.forbidden_items, forbidden_items_dict[item])
     end
     for _, item in ipairs(self.forbidden_items) do
@@ -308,6 +311,7 @@ end
 ---@param item string
 ---@param amount integer
 function ClientManager:add_received_item(item, amount)
+  self.mod.dbg("Add received item: " .. item)
   if not self.run_info.received_items then self.run_info.received_items = {} end
   if not self.run_info.received_items[item] then self.run_info.received_items[item] = 0 end
   self.run_info.received_items[item] = self.run_info.received_items[item] + amount
@@ -332,6 +336,7 @@ function ClientManager:add_to_be_distributed(floor, item, amount)
 end
 
 function ClientManager:connection_request()
+  self.mod.dbg("Connection request")
   local init_save_data = SaveData({
     actor = "mod",
     timestamp = Isaac.GetTime(),
@@ -351,6 +356,8 @@ function ClientManager:poll()
     local save_data = SaveData(js)
 
     if save_data.session_id ~= self.session_id then
+      self.mod.dbg("Session_id missmatch")
+      self.mod.dbg(tostring(save_data.session_id) .. " ~= " .. tostring(self.session_id))
       self.session_id = save_data.session_id
       self:connection_request()
       return
@@ -376,7 +383,6 @@ function ClientManager:send_commands()
     commands=self.commands_to_be_sent
   })
   self.commands_to_be_sent = {}
-
   self.mod:SaveData(json.encode(new_save_data))
 end
 
@@ -390,7 +396,8 @@ function ClientManager:on_post_render()
   if Isaac.GetFrameCount() % 6 == 0 and self.mod:HasData() then
     self:poll()
   elseif Isaac.GetFrameCount() % 6 == 0 and not self.mod:HasData() then
-      self:connection_request()
+    self.mod.dbg("No data found")
+    self:connection_request()
   end
 end
 
@@ -414,6 +421,7 @@ function ClientManager:update_run_info()
 end
 
 function ClientManager:send_goal(boss)
+  self.mod.dbg("Send goal")
   if self.goals[boss] ~= nil then
     self.goals[boss] = true
     self.mod.dbg("Set goals")

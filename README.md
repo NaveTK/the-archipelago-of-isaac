@@ -19,13 +19,13 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Option on how to handle out-of-logic checks through sequence breaking (Block, None, All, Store)
 - [x] ~~Option to define behavior of rng rooms~~
 - [x] ~~Option to disable super rare rooms from logic~~
-- [x] Option to disable floor variation splits
+- [x] ~~Option to disable floor variation splits~~
 - [x] Option to configure death link severity
 - [ ] Item groups and location groups
 - [ ] Bosssanity
 - [ ] Monstersanity
 - [x] Progressive Mapping unlocks
-- [x] Permanent stat ups
+- [x] ~~Permanent stat ups~~
 
 ### Bugs
 - [ ] Victory runs shouldn't count

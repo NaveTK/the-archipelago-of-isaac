@@ -124,7 +124,7 @@ function ItemManager:init_new_run()
     self.give_queue:push(CollectibleType.COLLECTIBLE_RED_KEY)
   end
 
-  if self.mod.client_manager.options[''] > 0 then
+  if self.mod.client_manager.options.start_out_nerfed > 0 then
       Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_RANGE | CacheFlag.CACHE_SPEED | CacheFlag.CACHE_LUCK)
       Isaac.GetPlayer():EvaluateItems()
   end
@@ -143,6 +143,7 @@ end
 
 function ItemManager:give_item(itemType)
   self.mod.dbg('Giving item of type: ' .. itemType)
+  self.mod.client_manager:add_received_item(itemType, 1)
   if itemType == 'Angel Deal Item' then
     self:queue_item_from_pool(ItemPoolType.POOL_ANGEL)
   elseif itemType == 'Boss Item' then
@@ -213,7 +214,6 @@ function ItemManager:give_item(itemType)
   else
     self.mod.dbg('Unknown item type: ' .. itemType)
   end
-  self.mod.client_manager:add_received_item(itemType, 1)
 end
 
 function ItemManager:give_items()
@@ -361,27 +361,42 @@ end
 
 
 function ItemManager:on_evaluate_damage(player, flag)
-  local mult = self.mod.client_manager:count_received_item('Permanent Damage Up') - self.mod.client_manager.options['start_out_nerfed']
+  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
+
+  self.mod.dbg("on_evaluate_damage")
+  local mult = self.mod.client_manager:count_received_item('Permanent Damage Up') - self.mod.client_manager.options.start_out_nerfed
   player.Damage = player.Damage + 0.6 * mult
 end
 
 function ItemManager:on_evaluate_tears(player, flag)
-  local mult = self.mod.client_manager:count_received_item('Permanent Tears Up') - self.mod.client_manager.options['start_out_nerfed']
-  player.MaxFireDelay = player.MaxFireDelay + 0.35 * mult
+  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
+  
+  self.mod.dbg("on_evaluate_tears")
+  local mult = self.mod.client_manager:count_received_item('Permanent Tears Up') - self.mod.client_manager.options.start_out_nerfed
+  player.MaxFireDelay = 30/(30/(player.MaxFireDelay+1) + 0.35 * mult)-1
 end
 
 function ItemManager:on_evaluate_range(player, flag)
-  local mult = self.mod.client_manager:count_received_item('Permanent Range Up') - self.mod.client_manager.options['start_out_nerfed']
+  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
+  
+  self.mod.dbg("on_evaluate_range")
+  local mult = self.mod.client_manager:count_received_item('Permanent Range Up') - self.mod.client_manager.options.start_out_nerfed
   player.TearRange = player.TearRange + (1.25 * 40) * mult
 end
 
 function ItemManager:on_evaluate_speed(player, flag)
-  local mult = self.mod.client_manager:count_received_item('Permanent Speed Up') - self.mod.client_manager.options['start_out_nerfed']
-  player.Speed = player.Speed + 0.15 * mult
+  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
+  
+  self.mod.dbg("on_evaluate_speed")
+  local mult = self.mod.client_manager:count_received_item('Permanent Speed Up') - self.mod.client_manager.options.start_out_nerfed
+  player.MoveSpeed = player.MoveSpeed + 0.15 * mult
 end
 
 function ItemManager:on_evaluate_luck(player, flag)
-  local mult = self.mod.client_manager:count_received_item('Permanent Luck Up') - self.mod.client_manager.options['start_out_nerfed']
+  if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
+  
+  self.mod.dbg("on_evaluate_luck")
+  local mult = self.mod.client_manager:count_received_item('Permanent Luck Up') - self.mod.client_manager.options.start_out_nerfed
   player.Luck = player.Luck + 1 * mult
 end
 
@@ -390,11 +405,11 @@ function ItemManager:Init(mod)
   self.mod = mod
 
   mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() self:on_post_update() end)
-  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_damage(player, flag) end, CacheFlag.CACHE_DAMAGE)
-  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_tears(player, flag) end, CacheFlag.CACHE_FIREDELAY)
-  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_range(player, flag) end, CacheFlag.CACHE_RANGE)
-  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_speed(player, flag) end, CacheFlag.CACHE_SPEED)
-  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(player, flag) self:on_evaluate_luck(player, flag) end, CacheFlag.CACHE_LUCK)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(_, player, flag) self:on_evaluate_damage(player, flag) end, CacheFlag.CACHE_DAMAGE)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(_, player, flag) self:on_evaluate_tears(player, flag) end, CacheFlag.CACHE_FIREDELAY)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(_, player, flag) self:on_evaluate_range(player, flag) end, CacheFlag.CACHE_RANGE)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(_, player, flag) self:on_evaluate_speed(player, flag) end, CacheFlag.CACHE_SPEED)
+  mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, function(_, player, flag) self:on_evaluate_luck(player, flag) end, CacheFlag.CACHE_LUCK)
 end
 
 return ItemManager

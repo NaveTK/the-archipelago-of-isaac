@@ -157,7 +157,11 @@ function ProgressionManager:get_current_stage_name(--[[optional]] stageType)
   end
   if stage < LevelStage.STAGE4_3 then
     local firstStage = math.floor((stage - 1) / 2) * 2 + 1
-    return stage_names[tostring(firstStage) .. '_' .. tostring(type)]
+    if self.mod.client_manager.options.floor_variations then
+      return stage_names[tostring(firstStage) .. '_' .. tostring(type)]    
+    else
+      return stage_names[tostring(firstStage) .. '_0']
+    end
   end
   if stage == LevelStage.STAGE4_3 or stage >= LevelStage.STAGE7 then
     return stage_names[tostring(stage)]
@@ -192,7 +196,7 @@ function ProgressionManager:on_new_level()
     return
   end
 
-  if Game():GetLevel():GetStage() > LevelStage.STAGE4_2 then self:on_new_level_post_reroll() return end 
+  if Game():GetLevel():GetStage() > LevelStage.STAGE4_2 or not self.mod.client_manager.options.floor_variations then self:on_new_level_post_reroll() return end 
 
   --reroll variant
   local available_types = self:get_unlocked_stage_types(Game():GetLevel():GetStage(), Game():GetLevel():GetStageType())
