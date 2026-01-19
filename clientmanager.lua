@@ -296,6 +296,7 @@ function ClientManager:unlock_locations(names)
       if item.player ~= self.slot then
         local item_name = self:get_item_name(item.item, self:get_game_name(item.player))
         self.mod.notification_manager:show_message('Sent ' .. item_name, 'To ' .. self:get_player_name(item.player))
+        SFXManager():Play(SoundEffect.SOUND_THUMBSUP)
       end
     end
   end

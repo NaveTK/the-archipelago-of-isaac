@@ -198,18 +198,23 @@ function ItemManager:give_item(itemType)
     if itemType:find('Damage') then
       Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_DAMAGE)
       Isaac.GetPlayer():EvaluateItems()
+      SFXManager():Play(SoundEffect.SOUND_UNHOLY)
     elseif itemType:find('Tears') then
       Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
       Isaac.GetPlayer():EvaluateItems()
+      SFXManager():Play(SoundEffect.SOUND_TEARS_UP)
     elseif itemType:find('Range') then
       Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_RANGE)
       Isaac.GetPlayer():EvaluateItems()
+      SFXManager():Play(SoundEffect.SOUND_RANGE_UP)
     elseif itemType:find('Speed') then
       Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_SPEED)
       Isaac.GetPlayer():EvaluateItems()
+      SFXManager():Play(SoundEffect.SOUND_SPEED_UP)
     elseif itemType:find('Luck') then
       Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_LUCK)
       Isaac.GetPlayer():EvaluateItems()
+      SFXManager():Play(SoundEffect.SOUND_LUCK_UP)
     end
   else
     self.mod.dbg('Unknown item type: ' .. itemType)
