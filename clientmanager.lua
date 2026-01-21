@@ -239,6 +239,7 @@ function ClientManager:process_mod_command(cmd)
     else
       Game():End(1)
     end
+    self.block_death_link = Isaac.GetTime() + 5000
   end
 end
 
@@ -410,6 +411,7 @@ function ClientManager:on_post_render()
 end
 
 function ClientManager:send_death()
+  if Isaac.GetTime() < self.block_death_link then return end
   self.mod.dbg("Send death")
   table.insert(self.commands_to_be_sent, {
     type = "Died",

@@ -34,3 +34,4 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [x] ~~AP Items are not sent out when picked up by Esau~~
 - [x] ~~AP Items don't revert to their original items if all AP items are exhausted for floor~~
 - [ ] Portals/Trapdoors/Exits don't respawn if location is sent after they have already been removed
+- [x] ~~Death links retriggers when you die to it~~
