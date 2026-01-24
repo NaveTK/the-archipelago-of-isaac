@@ -4,10 +4,12 @@ local queue = require("utils.queue")
 ---@field mod ModReference
 ---@field message_queue Queue
 ---@field logs Queue
+---@field show_logs boolean
 local NotificationManager = {
   message_queue = queue.new(),
   queue_timer = 0,
-  logs = queue.new()
+  logs = queue.new(),
+  show_logs = true
 }
 
 function NotificationManager:on_post_update()
@@ -24,11 +26,11 @@ function NotificationManager:on_post_update()
       elseif message.title:find('^Random') then
         SFXManager():Play(SoundEffect.SOUND_PORTAL_SPAWN)
       end
-      self.queue_timer = 30
+      self.queue_timer = 30 - self.message_queue.size
     elseif message and message.type == 1 then
       Game():GetHUD():ShowFortuneText(message.line1, message.line2)
       SFXManager():Play(SoundEffect.SOUND_GOLDENKEY)
-      self.queue_timer = 30
+      self.queue_timer = 30 - self.message_queue.size
     end
   end
 end
@@ -50,19 +52,33 @@ function NotificationManager:add_log(log)
 end
 
 function NotificationManager:on_post_render()
-  for i, log in self.logs:ipairs() do
-    if i > 5 and not Input.IsActionPressed(ButtonAction.ACTION_MAP, 0) then break end
-    local alpha = 0.75
-    if i == 5 then
-      alpha = 0.5
+  if Input.IsButtonTriggered(Keyboard.KEY_F2, 0) then
+    self.show_logs = not self.show_logs
+  end
+
+  if self.show_logs then
+    for i, log in self.logs:ipairs() do
+      if i > 5 and not Input.IsActionPressed(ButtonAction.ACTION_MAP, 0) then break end
+      local alpha = 0.75
+      if i == 5 then
+        alpha = 0.5
+      end
+      if Input.IsActionPressed(ButtonAction.ACTION_MAP, 0) then
+        alpha = 1
+      end
+      local x = 80
+      for _, segment in ipairs(log) do
+        Isaac.RenderScaledText(segment[1], x, 270 - i * 7, 0.5, 0.5, segment[2], segment[3], segment[4], alpha)
+        x = x + Isaac.GetTextWidth(segment[1]) * 0.5
+      end
     end
-    if Input.IsActionPressed(ButtonAction.ACTION_MAP, 0) then
-      alpha = 1
+
+    if self.logs.size > 0 then
+      Isaac.RenderScaledText('(F2 to hide AP history)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
     end
-    local x = 80
-    for _, segment in ipairs(log) do
-      Isaac.RenderScaledText(segment[1], x, 270 - i * 7, 0.5, 0.5, segment[2], segment[3], segment[4], alpha)
-      x = x + Isaac.GetTextWidth(segment[1]) * 0.5
+  else
+    if self.logs.size > 0 then
+      Isaac.RenderScaledText('(F2 to show AP history)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
     end
   end
 end
