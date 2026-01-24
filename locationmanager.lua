@@ -114,10 +114,10 @@ function LocationManager:show_ap_on_door(door)
   if door:GetSprite():GetAnimation() == "Hidden" then return end
 
   local dir_offsets = {
-    [Direction.DOWN] = Vector(8, 35),
+    [Direction.DOWN] = Vector(7, 35),
     [Direction.LEFT] = Vector(-23, 6),
-    [Direction.RIGHT] = Vector(36, 6),
-    [Direction.UP] = Vector(8, -23),
+    [Direction.RIGHT] = Vector(35, 6),
+    [Direction.UP] = Vector(7, -23),
     [Direction.NO_DIRECTION] = Vector.Zero
   }
 

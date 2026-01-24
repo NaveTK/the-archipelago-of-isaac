@@ -46,8 +46,10 @@
 ---@field status integer
 
 ---@class NetworkItem
----@field player integer
 ---@field item integer
+---@field location integer
+---@field player integer
+---@field flags integer
 
 ---@param t table
 ---@return Command
@@ -92,10 +94,14 @@ local json = require('json')
 ---@field scouted_locations table<integer, NetworkItem>
 ---@field hintable_locations integer[]
 ---@field forbidden_items integer[]
+---@field block_death_link integer
+---@field trigger_deathlink boolean
 local ClientManager = {
   state = "Disconnected",
   session_id = "",
-  commands_to_be_sent = {}
+  commands_to_be_sent = {},
+  block_death_link = 0,
+  trigger_deathlink = false
 }
 
 function ClientManager:own_game()
@@ -161,6 +167,7 @@ function ClientManager:add_available_item(item, notification)
       if item_name == 'Red Key Unlock' then
         self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_RED_KEY)
       end
+      self.mod.progression_manager:check_special_exits()
     else
       self.mod.notification_manager:show_message(item_name, sub)
     end
@@ -180,7 +187,11 @@ local forbidden_items_dict = {
   ["Kidney Stone"] = CollectibleType.COLLECTIBLE_KIDNEY_STONE,
   ["Missing No"] = CollectibleType.COLLECTIBLE_MISSING_NO,
   ["Shard of Glass"] = CollectibleType.COLLECTIBLE_SHARD_OF_GLASS,
-  ["TMTrainer"] = CollectibleType.COLLECTIBLE_TMTRAINER
+  ["TMTrainer"] = CollectibleType.COLLECTIBLE_TMTRAINER,
+  ["Bob's Brain"] = CollectibleType.COLLECTIBLE_BOBS_BRAIN,
+  ["Dr. Fetus"] = CollectibleType.COLLECTIBLE_DR_FETUS,
+  ["Epic Fetus"] = CollectibleType.COLLECTIBLE_EPIC_FETUS,
+  ["Fire Mind"] = CollectibleType.COLLECTIBLE_FIRE_MIND
 }
 
 ---@param cmd Command
@@ -225,6 +236,28 @@ function ClientManager:process_mod_command(cmd)
     local items = cmd.payload
     for _, item in ipairs(items) do
       self:add_available_item(item, true)
+
+      local r = 0
+      local g = 0.8
+      local b = 0.8
+      if (item.flags & 0x1) ~= 0 then
+        r = 0.5
+        g = 0.5
+        b = 1
+      elseif (item.flags & 0x2) ~= 0 then
+        r = 0.25
+        g = 0.5
+        b = 0.75
+      elseif (item.flags & 0x4) ~= 0 then
+        r = 0.75
+        g = 0.5
+        b = 0.25
+      end
+      if item.player == self.slot then
+        self.mod.notification_manager:add_log({{'You found your ', 1, 1, 1}, {self:get_item_name(item.item, self:own_game()), r, g, b}, {' (', 1, 1, 1}, {self:get_location_name(item.location), 0, 0.9, 0.25}, {')', 1, 1, 1}})
+      else
+        self.mod.notification_manager:add_log({{self:get_player_name(item.player), 1, 1, 0.75}, {' sent ', 1, 1, 1}, {self:get_item_name(item.item, self:own_game()), r, g, b}, {' to you.', 1, 1, 1}})
+      end
     end
     self.mod.item_manager:give_items()
   end
@@ -232,14 +265,7 @@ function ClientManager:process_mod_command(cmd)
     self.hintable_locations = cmd.payload
   end
   if cmd.type == "Kill" then
-    if self.options.death_link_severity == 0 and not Isaac.GetPlayer():IsInvincible() then
-      Isaac.GetPlayer():TakeDamage(4, DamageFlag.DAMAGE_TIMER, EntityRef(Isaac.GetPlayer()), 0)
-    elseif self.options.death_link_severity == 1 and not Isaac.GetPlayer():IsInvincible() then
-      Isaac.GetPlayer():Kill()
-    else
-      Game():End(1)
-    end
-    self.block_death_link = Isaac.GetTime() + 5000
+    self.trigger_deathlink = true
   end
 end
 
@@ -298,6 +324,24 @@ function ClientManager:unlock_locations(names)
         local item_name = self:get_item_name(item.item, self:get_game_name(item.player))
         self.mod.notification_manager:show_message('Sent ' .. item_name, 'To ' .. self:get_player_name(item.player))
         SFXManager():Play(SoundEffect.SOUND_THUMBSUP)
+
+        local r = 0
+        local g = 0.8
+        local b = 0.8
+        if (item.flags & 0x1) ~= 0 then
+          r = 0.5
+          g = 0.5
+          b = 1
+        elseif (item.flags & 0x2) ~= 0 then
+          r = 0.25
+          g = 0.5
+          b = 0.75
+        elseif (item.flags & 0x4) ~= 0 then
+          r = 0.75
+          g = 0.5
+          b = 0.25
+        end
+        self.mod.notification_manager:add_log({{'You sent ', 1, 1, 1}, {item_name, r, g, b}, {' to ', 1, 1, 1},{self:get_player_name(item.player), 1, 1, 0.75}, {' (', 1, 1, 1}, {self:get_location_name(item.location), 0, 0.9, 0.25}, {')', 1, 1, 1}})
       end
     end
   end
@@ -352,8 +396,8 @@ function ClientManager:connection_request()
     commands = { Command({type = "RequestAll"}) },
     session_id = self.session_id
   })
-
   self.mod:SaveData(json.encode(init_save_data))
+  self.state = "Connecting"
 end
 
 function ClientManager:poll()
@@ -364,7 +408,12 @@ function ClientManager:poll()
 
     local save_data = SaveData(js)
 
-    if save_data.session_id ~= self.session_id then
+    if self.session_id == "" and self.state ~= "Connecting" then
+      self.mod.dbg("No session_id")
+      self:connection_request()
+      return
+    end
+    if self.session_id ~= save_data.session_id and save_data.session_id ~= "" then
       self.mod.dbg("Session_id missmatch")
       self.mod.dbg(tostring(save_data.session_id) .. " ~= " .. tostring(self.session_id))
       self.session_id = save_data.session_id
@@ -373,10 +422,8 @@ function ClientManager:poll()
     end
     if save_data.actor == "mod" and Isaac.GetTime() - save_data.timestamp > 3000 then self.state = "Disconnected" return end
     if save_data.actor ~= "client" then return end
-    if self.session_id ~= "" and save_data.session_id ~= self.session_id then return end
 
     self.state = "Connected"
-
     for _, cmd in ipairs(save_data.commands) do
       self:process_mod_command(cmd)
     end
@@ -397,14 +444,16 @@ end
 
 function ClientManager:on_post_render()
   if self.state == "Connected" then
-    Isaac.RenderScaledText('Connected', 2, 2, 0.5, 0.5, 0, 1, 0, 255)
+    Isaac.RenderScaledText('Connected', 2, 2, 0.5, 0.5, 0, 1, 0, 1)
+  elseif self.state == "Connecting" then
+    Isaac.RenderScaledText('Connecting', 2, 2, 0.5, 0.5, 1, 1, 0, 1)
   else
-    Isaac.RenderScaledText('Disconnected', 2, 2, 0.5, 0.5, 1, 0, 0, 255)
+    Isaac.RenderScaledText('Disconnected', 2, 2, 0.5, 0.5, 1, 0, 0, 1)
   end
 
-  if Isaac.GetFrameCount() % 6 == 0 and self.mod:HasData() then
+  if Isaac.GetFrameCount() % 12 == 0 and self.mod:HasData() then
     self:poll()
-  elseif Isaac.GetFrameCount() % 6 == 0 and not self.mod:HasData() then
+  elseif Isaac.GetFrameCount() % 12 == 0 and not self.mod:HasData() then
     self.mod.dbg("No data found")
     self:connection_request()
   end
@@ -458,6 +507,43 @@ function ClientManager:send_hint()
       type = "HintLocations",
       payload = { loc }
     })
+
+  local r = 0
+  local g = 0.8
+  local b = 0.8
+  if (item.flags & 0x1) ~= 0 then
+    r = 0.5
+    g = 0.5
+    b = 1
+  elseif (item.flags & 0x2) ~= 0 then
+    r = 0.25
+    g = 0.5
+    b = 0.75
+  elseif (item.flags & 0x4) ~= 0 then
+    r = 0.75
+    g = 0.5
+    b = 0.25
+  end
+  if item.player == self.slot then
+    self.mod.notification_manager:add_log({{'Your ', 1, 1, 1}, {self:get_item_name(item.item, self:get_game_name(item.player)), r, g, b}, {' is at ', 1, 1, 1}, {self:get_location_name(item.location), 0, 0.9, 0.25}, {'.', 1, 1, 1}})
+  else
+    self.mod.notification_manager:add_log({{self:get_player_name(item.player), 1, 1, 0.75}, {'\'s ', 1, 1, 1}, {self:get_item_name(item.item, self:get_game_name(item.player)), r, g, b}, {' is at ', 1, 1, 1}, {self:get_location_name(item.location), 0, 0.9, 0.25}, {'.', 1, 1, 1}})
+  end
+
+end
+
+function ClientManager:on_post_update()
+  if not Game():IsPaused() and self.trigger_deathlink then
+    if self.options.death_link_severity == 0 and not Isaac.GetPlayer():IsInvincible() then
+      Isaac.GetPlayer():TakeDamage(4, DamageFlag.DAMAGE_TIMER, EntityRef(Isaac.GetPlayer()), 0)
+    elseif self.options.death_link_severity == 1 and not Isaac.GetPlayer():IsInvincible() then
+      Isaac.GetPlayer():Kill()
+    else
+      Game():End(1)
+    end
+    self.block_death_link = Isaac.GetTime() + 5000
+    self.trigger_deathlink = false
+  end
 end
 
 ---@param mod ModReference
@@ -465,6 +551,7 @@ function ClientManager:Init(mod)
   self.mod = mod
 
   mod:AddCallback(ModCallbacks.MC_POST_RENDER, function() self:on_post_render() end)
+  mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() self:on_post_update() end)
 
 end
 

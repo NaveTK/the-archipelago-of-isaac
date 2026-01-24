@@ -28,6 +28,16 @@ function queue:clear()
   self.size = 0
 end
 
+function queue:ipairs()
+  local i = self.last + 1
+  return function()
+    i = i - 1
+    if i >= self.first then
+      return self.last + 1 - i, self.data[i] -- 1..size, value
+    end
+  end
+end
+
 return {
   new = queue.new
 }

@@ -15,23 +15,20 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 ### Changes
 - [ ] Merge with limeslime secret-based system for asyncs
 - [ ] Option to assign a set of characters to each individual goal
-- [x] ~~Option to define a X out of Y goal definition~~
 - [ ] Option on how to handle out-of-logic checks through sequence breaking (Block, None, All, Store)
-- [x] ~~Option to define behavior of rng rooms~~
-- [x] ~~Option to disable super rare rooms from logic~~
-- [x] ~~Option to disable floor variation splits~~
-- [x] ~~Option to configure death link severity~~
+- [ ] Add explody items to list of forbidden items (Dr. Fetus, Epic Fetus, Bob's Brain, Fire Mind)
 - [ ] Item groups and location groups
 - [ ] Bosssanity
 - [ ] Monstersanity
-- [x] ~~Progressive Mapping unlocks~~
-- [x] ~~Permanent stat ups~~
+- [ ] Show unchecked locations per floor in game
+- [x] ~~Show sent/received item history in game~~
 
 ### Bugs
 - [ ] Victory runs shouldn't count
 - [ ] Lost soul sometimes gives rewards even if it died last floor
-- [x] ~~Active items have a chance to be replaced with AP items when dropped~~
-- [x] ~~AP Items are not sent out when picked up by Esau~~
-- [x] ~~AP Items don't revert to their original items if all AP items are exhausted for floor~~
-- [ ] Portals/Trapdoors/Exits don't respawn if location is sent after they have already been removed
+- [x] ~~Random lag spikes~~
+- [x] ~~Portals/Trapdoors/Exits don't respawn if location is sent after they have already been removed~~
+- [x] ~~Boss rush / Hush door should not be removed if Mama Mega was used, even if still locked~~
 - [x] ~~Death links retriggers when you die to it~~
+- [x] ~~Corpse trapdoor doesn't spawn without womb/utero/scarred womb~~
+- [x] ~~Alt floor checks don't send with floor variants turned off~~

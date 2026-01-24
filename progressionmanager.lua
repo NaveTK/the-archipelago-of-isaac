@@ -34,7 +34,6 @@ function ProgressionManager:init_new_run()
         unspawned_locations = {},
         discarded_items = {}
     }
-    self.mod.client_manager.block_death_link = 0
     self.mod.item_manager:init_new_run()
     self.mod.client_manager:update_run_info()
     self:on_new_level()
@@ -159,7 +158,9 @@ function ProgressionManager:get_current_stage_name(--[[optional]] stageType)
   if stage < LevelStage.STAGE4_3 then
     local firstStage = math.floor((stage - 1) / 2) * 2 + 1
     if self.mod.client_manager.options.floor_variations then
-      return stage_names[tostring(firstStage) .. '_' .. tostring(type)]    
+      return stage_names[tostring(firstStage) .. '_' .. tostring(type)]
+    elseif Game():GetLevel():IsAltStage() then
+      return stage_names[tostring(firstStage) .. '_4']
     else
       return stage_names[tostring(firstStage) .. '_0']
     end
@@ -378,6 +379,9 @@ function ProgressionManager:check_special_exits()
   if not valueInList(RoomType.ROOM_SECRET_EXIT, should_have_door_types) and valueInList(RoomType.ROOM_SECRET_EXIT, has_door_types) then
     self.mod.dbg('Removing secret exit')
     Game():GetRoom():RemoveDoor(self:get_door_slot_of_type(RoomType.ROOM_SECRET_EXIT))
+  elseif Game():GetRoom():IsClear() and valueInList(RoomType.ROOM_SECRET_EXIT, should_have_door_types) and not valueInList(RoomType.ROOM_SECRET_EXIT, has_door_types) then
+    self.mod.dbg('Restoring secret exit')
+    Game():GetRoom():TrySpawnSecretExit(false, false)
   end
   if moms_foot_floor and is_boss then
     local trapdoor = Game():GetRoom():GetGridEntity(37)
@@ -388,6 +392,9 @@ function ProgressionManager:check_special_exits()
       if Game():GetRoom():IsClear() then
         Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TROPHY, 0, Game():GetRoom():GetCenterPos(), Vector.Zero, nil)
       end
+    elseif Game():GetRoom():IsClear() and not trapdoor and (Game():GetStateFlag(GameStateFlag.STATE_MAUSOLEUM_HEART_KILLED) or self.mod.client_manager:has_unlock('Womb') or self.mod.client_manager:has_unlock('Utero') or self.mod.client_manager:has_unlock('Scarred Womb')) then
+      self.mod.dbg('Restoring trapdoor to Womb')
+      Game():GetRoom():SpawnGridEntity(37, GridEntityType.GRID_TRAPDOOR, 0, RNG():Next(), 0)
     end
   end
 
@@ -397,6 +404,13 @@ function ProgressionManager:check_special_exits()
     if trapdoor and not self.mod.client_manager:has_unlock('Sheol') then
       self.mod.dbg('Removing trapdoor to Sheol')
       Game():GetRoom():RemoveGridEntity(trapdoor:GetGridIndex(), 0, false)
+    elseif Game():GetRoom():IsClear() and not trapdoor and self.mod.client_manager:has_unlock('Sheol') then
+      self.mod.dbg('Restoring trapdoor to Sheol')
+      local gridIdx = 66
+      if Game():GetLevel():GetStage() == LevelStage.STAGE4_3 then
+        gridIdx = 125
+      end
+      Game():GetRoom():SpawnGridEntity(gridIdx, GridEntityType.GRID_TRAPDOOR, 0, RNG():Next(), 0)
     end
 
     local beam = nil
@@ -410,6 +424,13 @@ function ProgressionManager:check_special_exits()
     if beam and not self.mod.client_manager:has_unlock('Cathedral') then
       self.mod.dbg('Removing beam to Cathedral')
       beam:Remove()
+    elseif Game():GetRoom():IsClear() and not beam and self.mod.client_manager:has_unlock('Cathedral') then
+      self.mod.dbg('Restoring beam to Cathedral')
+      local gridIdx = 68
+      if Game():GetLevel():GetStage() == LevelStage.STAGE4_3 then
+        gridIdx = 127
+      end
+      Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.HEAVEN_LIGHT_DOOR, 0, Game():GetRoom():GetGridPosition(gridIdx), Vector.Zero, nil)
     end
 
     if beam and trapdoor and not self.mod.client_manager:has_unlock('Sheol') and not self.mod.client_manager:has_unlock('Cathedral') and Game():GetRoom():IsClear() then
@@ -418,7 +439,7 @@ function ProgressionManager:check_special_exits()
   end
 
   if moms_foot_floor or moms_heart_floor or Game():GetLevel():GetStage() >= LevelStage.STAGE4_3 then
-    if (is_boss or Game():GetLevel():GetCurrentRoomIndex() == -9 or Game():GetLevel():GetCurrentRoomIndex() == -10 or Game():GetLevel():GetCurrentRoomIndex() == -7) and not self.mod.client_manager:has_unlock('Void Portal') then
+    if (is_boss or Game():GetLevel():GetCurrentRoomIndex() == -9 or Game():GetLevel():GetCurrentRoomIndex() == -10 or Game():GetLevel():GetCurrentRoomIndex() == -7) then
       local portal_position = 97
       if Game():GetLevel():GetCurrentRoomIndex() == -10 then
         portal_position = 172
@@ -431,19 +452,21 @@ function ProgressionManager:check_special_exits()
       end
       local portal = Game():GetRoom():GetGridEntity(portal_position)
       self.mod.dbg('Checking for portal to The Void: ' .. tostring(portal ~= nil))
-      if portal then
+      if portal and not self.mod.client_manager:has_unlock('Void Portal') then
         self.mod.dbg('Removing portal to The Void')
         Game():GetRoom():RemoveGridEntity(portal:GetGridIndex(), 0, false)
+      --elseif Game():GetRoom():IsClear() and not portal and self.mod.client_manager:has_unlock('Void Portal') and (Game():GetLevel():GetStage() == LevelStage.STAGE4_3 or Game():GetLevel():GetStage() >= LevelStage.STAGE6 or (moms_heart_floor and alt_path)) then
+      --  Game():GetRoom():SpawnGridEntity(portal_position, GridEntityType.GRID_TRAPDOOR, 0, RNG():Next(), 1)
       end
     end
   end
   
-  if not valueInList(RoomType.ROOM_BOSSRUSH, should_have_door_types) and valueInList(RoomType.ROOM_BOSSRUSH, has_door_types) then
+  if not valueInList(RoomType.ROOM_BOSSRUSH, should_have_door_types) and valueInList(RoomType.ROOM_BOSSRUSH, has_door_types) and not Game():GetLevel():GetStateFlag(LevelStateFlag.STATE_MAMA_MEGA_USED) then
     self.mod.dbg('Removing Boss rush')
     Game():GetRoom():RemoveDoor(self:get_door_slot_of_type(RoomType.ROOM_BOSSRUSH))
   end
   
-  if moms_heart_floor and is_boss and not alt_path and not self.mod.client_manager:has_unlock('???') and valueInList(-8, has_door_indexes) then
+  if moms_heart_floor and is_boss and not alt_path and not self.mod.client_manager:has_unlock('???') and valueInList(-8, has_door_indexes) and not Game():GetLevel():GetStateFlag(LevelStateFlag.STATE_MAMA_MEGA_USED) then
     self.mod.dbg('Removing Boss rush')
     for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do
       local door = Game():GetRoom():GetDoor(i)

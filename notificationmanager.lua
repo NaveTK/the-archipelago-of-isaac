@@ -3,9 +3,11 @@ local queue = require("utils.queue")
 ---@class NotificationManager
 ---@field mod ModReference
 ---@field message_queue Queue
+---@field logs Queue
 local NotificationManager = {
   message_queue = queue.new(),
-  queue_timer = 0
+  queue_timer = 0,
+  logs = queue.new()
 }
 
 function NotificationManager:on_post_update()
@@ -40,11 +42,38 @@ function NotificationManager:show_fortune(line1, line2)
   self.message_queue:push({type=1, line1=line1, line2=line2})
 end
 
+function NotificationManager:add_log(log)
+  self.logs:push(log)
+  if self.logs.size > 38 then
+    self.logs:pop()
+  end
+end
+
+function NotificationManager:on_post_render()
+  for i, log in self.logs:ipairs() do
+    if i > 5 and not Input.IsActionPressed(ButtonAction.ACTION_MAP, 0) then break end
+    local alpha = 0.75
+    if i == 5 then
+      alpha = 0.5
+    end
+    if Input.IsActionPressed(ButtonAction.ACTION_MAP, 0) then
+      alpha = 1
+    end
+    local x = 80
+    for _, segment in ipairs(log) do
+      Isaac.RenderScaledText(segment[1], x, 270 - i * 7, 0.5, 0.5, segment[2], segment[3], segment[4], alpha)
+      x = x + Isaac.GetTextWidth(segment[1]) * 0.5
+    end
+  end
+end
+
+
 ---@param mod ModReference
 function NotificationManager:Init(mod)
   self.mod = mod
 
   mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() self:on_post_update() end)
+  mod:AddCallback(ModCallbacks.MC_POST_RENDER, function() self:on_post_render() end)
 end
 
 return NotificationManager
