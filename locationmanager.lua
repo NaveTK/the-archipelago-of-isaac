@@ -1,8 +1,10 @@
 ---@class LocationManager
 ---@field mod ModReference
 ---@field played_fortune_machines table<integer, EntityRef>
+---@field location_icons Sprite[]
 local LocationManager = {
-    played_fortune_machines = {}
+    played_fortune_machines = {},
+    location_icons = {}
 }
 
 local chapter_room_names = {
@@ -56,7 +58,7 @@ function LocationManager:get_location_name(room_type, room_index)
     location_name = self.mod.progression_manager:get_current_stage_name() .. ' - ' .. stage_room_names[room_type]
   end
   if chapter_room_names[room_type] then
-    location_name = chapter_names[Game():GetLevel():GetStage()] .. ' - ' .. chapter_room_names[room_type]
+    location_name = self:get_current_chapter_name() .. ' - ' .. chapter_room_names[room_type]
   end
   if room_index == 94 and Game():GetLevel():GetStage() == LevelStage.STAGE8 then
     location_name = 'Home - Closet'
@@ -74,6 +76,10 @@ function LocationManager:get_location_name(room_type, room_index)
     location_name = 'Home - Boss Room'
   end
   return location_name
+end
+
+function LocationManager:get_current_chapter_name()
+  return chapter_names[Game():GetLevel():GetStage()]
 end
 
 function LocationManager:unlock_location()
@@ -114,10 +120,10 @@ function LocationManager:show_ap_on_door(door)
   if door:GetSprite():GetAnimation() == "Hidden" then return end
 
   local dir_offsets = {
-    [Direction.DOWN] = Vector(7, 35),
+    [Direction.DOWN] = Vector(4, 35),
     [Direction.LEFT] = Vector(-23, 6),
     [Direction.RIGHT] = Vector(35, 6),
-    [Direction.UP] = Vector(7, -23),
+    [Direction.UP] = Vector(4, -23),
     [Direction.NO_DIRECTION] = Vector.Zero
   }
 
@@ -335,6 +341,76 @@ function LocationManager:on_fortune_telling_machine(entity_npc, collider)
   end
 end
 
+function LocationManager:recalculate_location_icons()
+  self.mod.dbg('Recalculating location icons...')
+  self.location_icons = {}
+  local locations = self.mod.client_manager:get_floor_locations(self.mod.progression_manager:get_current_stage_name(), self:get_current_chapter_name())
+  for _, location in ipairs(locations) do
+    self.mod.dbg('Recalculating icon for location: ' .. location.name .. ', completed: ' .. tostring(location.completed))
+    local name, completed = location.name, location.completed
+    if name:find("^Item") then
+      name = "Item"
+    end
+
+    local postfix = '_On'
+
+    if self.mod.client_manager.options.rng_rooms == 1 then
+      if (name == "Vault" or name == "Dice Room" or name == "Bedroom" or name == "Library") then
+        postfix = '_No_Prio'
+      end
+    end
+
+    if name == "Ultra Secret Room" then
+      if self.mod.client_manager.options.ultra_secret_room == 1 then
+        postfix = '_No_Prio'
+      elseif self.mod.client_manager.options.ultra_secret_room == 3 and not self.mod.client_manager:has_unlock("Red Key") then
+        postfix = '_Locked'
+      end
+    end
+    if name == "I AM ERROR" then
+      if self.mod.client_manager.options.error_room == 1 then
+        postfix = '_No_Prio'
+      elseif self.mod.client_manager.options.error_room == 3 and not self.mod.client_manager:has_unlock("Undefined") then
+        postfix = '_Locked'
+      end
+    end
+    if name == "Crawl Space" then
+      if self.mod.client_manager.options.crawl_space == 1 then
+        postfix = '_No_Prio'
+      elseif self.mod.client_manager.options.crawl_space == 3 and not self.mod.client_manager:has_unlock("We Need To Go Deeper!") then
+        postfix = '_Locked'
+      end
+    end
+    if name == "Planetarium" then
+      if self.mod.client_manager.options.planetarium == 1 then
+        postfix = '_No_Prio'
+      elseif self.mod.client_manager.options.planetarium == 3 and not self.mod.client_manager:has_unlock("Telescope Lens") then
+        postfix = '_Locked'
+      end
+    end
+
+    if completed then
+      postfix = '_Off'
+    end
+
+    local icon = Sprite()
+    icon:Load("gfx/ui/icon.anm2", false)
+
+    icon:ReplaceSpritesheet(0, "gfx/ui/" .. name .. postfix .. ".png")
+    icon:LoadGraphics()
+
+    icon:Play("Idle", true)
+    table.insert(self.location_icons, icon)
+  end
+end
+
+function LocationManager:on_post_render()
+  if not self.mod.notification_manager.show_logs then return end
+  for i, icon in ipairs(self.location_icons) do
+    icon:RenderLayer(0, Vector(457 - (#self.location_icons - i) * 10, 4), Vector.Zero, Vector.Zero)
+  end
+end
+
 ---@param mod ModReference
 function LocationManager:Init(mod)
   self.mod = mod
@@ -347,6 +423,7 @@ function LocationManager:Init(mod)
   mod:AddCallback(ModCallbacks.MC_PRE_PLAYER_COLLISION, function(_, entity_npc, collider) self:on_fortune_telling_machine(entity_npc, collider) end)
   mod:AddCallback(ModCallbacks.MC_USE_ITEM, function() self:on_crystal_ball_use() end, CollectibleType.COLLECTIBLE_CRYSTAL_BALL)
   mod:AddCallback(ModCallbacks.MC_USE_ITEM, function() self:on_fortune_cookie_use() end, CollectibleType.COLLECTIBLE_FORTUNE_COOKIE)
+  mod:AddCallback(ModCallbacks.MC_POST_RENDER, function() self:on_post_render() end)
 end
 
 return LocationManager
