@@ -1,5 +1,4 @@
 local queue = require("utils.queue")
-local playerutils = require("utils.playerutils")
 
 ---@class ItemManager
 ---@field mod ModReference
@@ -126,8 +125,10 @@ function ItemManager:init_new_run()
   end
 
   if self.mod.client_manager.options.start_out_nerfed > 0 then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_RANGE | CacheFlag.CACHE_SPEED | CacheFlag.CACHE_LUCK)
-      Isaac.GetPlayer():EvaluateItems()
+    for _, player in ipairs(self.mod.player_utils:GetAllActivePlayers()) do
+      player:AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_RANGE | CacheFlag.CACHE_SPEED | CacheFlag.CACHE_LUCK)
+      player:EvaluateItems()
+    end
   end
 end
 
@@ -196,26 +197,28 @@ function ItemManager:give_item(itemType)
       self.give_queue:push(CollectibleType.COLLECTIBLE_BLUE_MAP)
     end
   elseif itemType:find('^Permanent') then
-    if itemType:find('Damage') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_DAMAGE)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_UNHOLY)
-    elseif itemType:find('Tears') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_TEARS_UP)
-    elseif itemType:find('Range') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_RANGE)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_RANGE_UP)
-    elseif itemType:find('Speed') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_SPEED)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_SPEED_UP)
-    elseif itemType:find('Luck') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_LUCK)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_LUCK_UP)
+    for _, player in ipairs(self.mod.player_utils:GetAllActivePlayers()) do
+      if itemType:find('Damage') then
+        player:AddCacheFlags(CacheFlag.CACHE_DAMAGE)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_UNHOLY)
+      elseif itemType:find('Tears') then
+        player:AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_TEARS_UP)
+      elseif itemType:find('Range') then
+        player:AddCacheFlags(CacheFlag.CACHE_RANGE)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_RANGE_UP)
+      elseif itemType:find('Speed') then
+        player:AddCacheFlags(CacheFlag.CACHE_SPEED)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_SPEED_UP)
+      elseif itemType:find('Luck') then
+        player:AddCacheFlags(CacheFlag.CACHE_LUCK)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_LUCK_UP)
+      end
     end
   else
     self.mod.dbg('Unknown item type: ' .. itemType)
@@ -292,7 +295,7 @@ function ItemManager:queue_item_from_pool(poolType)
 end
 
 function ItemManager:give_next()  
-  local randomPlayer = GetRandomPlayer()
+  local randomPlayer = self.mod.player_utils:GetRandomPlayer()
   if self.give_queue.size > 0 then
     local item_id = self.give_queue:pop()
     if item_id then
@@ -312,7 +315,7 @@ function ItemManager:give_next()
       else
         SFXManager():Play(SoundEffect.SOUND_POWERUP1)
       end
-      --Game():GetHUD():ShowItemText(Isaac.GetPlayer(), cfgItem, true)
+      --Game():GetHUD():ShowItemText(player, cfgItem, true)
       self.queue_timer = 15
       return
     end
@@ -335,7 +338,7 @@ function ItemManager:give_next()
   if self.trap_queue.size > 0 then
     local trap = self.trap_queue:pop()
     self.mod.dbg('Activating trap: ' .. trap)
-    local players = GetAllActivePlayers()
+    local players = self.mod.player_utils:GetAllActivePlayers()
     if trap == 'Curse Trap' then
       for _, player in ipairs(players) do
         if player:HasCollectible(CollectibleType.COLLECTIBLE_BLACK_CANDLE) then

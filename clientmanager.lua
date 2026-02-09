@@ -1,5 +1,3 @@
-local playerutils = require("utils.playerutils")
-
 ---@class Command
 ---@field type string
 ---@field payload any
@@ -318,7 +316,7 @@ function ClientManager:process_mod_command(cmd)
     self.hintable_locations = cmd.payload
   end
   if cmd.type == "Kill" then
-    local randomPlayer = GetRandomPlayer()
+    local randomPlayer = self.mod.player_utils:GetRandomPlayer()
     if self.options.death_link_severity == 0 and not randomPlayer:IsInvincible() then
       randomPlayer:TakeDamage(4, DamageFlag.DAMAGE_TIMER, EntityRef(randomPlayer), 0)
     elseif self.options.death_link_severity == 1 and not randomPlayer:IsInvincible() then

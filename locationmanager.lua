@@ -1,5 +1,3 @@
-local playerutils = require("utils.playerutils")
-
 ---@class LocationManager
 ---@field mod ModReference
 ---@field played_fortune_machines table<integer, EntityRef>
@@ -221,7 +219,7 @@ local ap_item_id = Isaac.GetItemIdByName('AP Item')
 function LocationManager:on_post_update()
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
 
-  for _, player in ipairs(GetAllActivePlayers()) do
+  for _, player in ipairs(self.mod.player_utils:GetAllActivePlayers()) do
     if player:HasCollectible(ap_item_id, true) then
       player:RemoveCollectible(ap_item_id)
       local location = self.mod.client_manager:get_item_location(self.mod.progression_manager:get_current_stage_name())
@@ -306,7 +304,7 @@ end
 ---@param entity_pickup EntityPickup
 ---@param collider Entity
 function LocationManager:on_pickup_collision(entity_pickup, collider)
-  for _, player in ipairs(GetAllActivePlayers()) do
+  for _, player in ipairs(self.mod.player_utils:GetAllActivePlayers()) do
     if collider.Index == player.Index then
       if entity_pickup.Variant == PickupVariant.PICKUP_TROPHY then
         self:on_run_ended(false)
