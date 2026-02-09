@@ -1,3 +1,5 @@
+local playerutils = require("utils.playerutils")
+
 ---@class LocationManager
 ---@field mod ModReference
 ---@field played_fortune_machines table<integer, EntityRef>
@@ -219,29 +221,9 @@ local ap_item_id = Isaac.GetItemIdByName('AP Item')
 function LocationManager:on_post_update()
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
 
-  if Isaac.GetPlayer():HasCollectible(ap_item_id, true) then
-    Isaac.GetPlayer():RemoveCollectible(ap_item_id)
-    local location = self.mod.client_manager:get_item_location(self.mod.progression_manager:get_current_stage_name())
-    self.mod.dbg(tostring(location))
-    if location then
-      self.mod.client_manager:unlock_locations({location})
-
-      local next_location = self.mod.client_manager:get_item_location(self.mod.progression_manager:get_current_stage_name())
-      if not next_location then
-        for _, entity in ipairs(Isaac.GetRoomEntities()) do
-          if entity.Type == EntityType.ENTITY_PICKUP and entity.Variant == PickupVariant.PICKUP_COLLECTIBLE and entity.SubType == ap_item_id then
-            local pickup = entity:ToPickup()
-            if pickup then
-              pickup:Morph(pickup.Type, pickup.Variant, Game():GetItemPool():GetCollectible(Game():GetItemPool():GetPoolForRoom(Game():GetRoom():GetType(), Random()), true, Random()), true, true, true)
-            end
-          end
-        end
-      end
-    end
-  end
-  if Isaac.GetPlayer():GetOtherTwin() ~= nil then
-    if Isaac.GetPlayer():GetOtherTwin():HasCollectible(ap_item_id, true) then
-      Isaac.GetPlayer():GetOtherTwin():RemoveCollectible(ap_item_id)
+  for _, player in ipairs(GetAllActivePlayers()) do
+    if player:HasCollectible(ap_item_id, true) then
+      player:RemoveCollectible(ap_item_id)
       local location = self.mod.client_manager:get_item_location(self.mod.progression_manager:get_current_stage_name())
       self.mod.dbg(tostring(location))
       if location then
@@ -324,9 +306,11 @@ end
 ---@param entity_pickup EntityPickup
 ---@param collider Entity
 function LocationManager:on_pickup_collision(entity_pickup, collider)
-  if collider.Index == Isaac.GetPlayer().Index then
-    if entity_pickup.Variant == PickupVariant.PICKUP_TROPHY then
-      self:on_run_ended(false)
+  for _, player in ipairs(GetAllActivePlayers()) do
+    if collider.Index == player.Index then
+      if entity_pickup.Variant == PickupVariant.PICKUP_TROPHY then
+        self:on_run_ended(false)
+      end
     end
   end
 end

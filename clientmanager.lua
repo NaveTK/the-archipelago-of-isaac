@@ -1,3 +1,5 @@
+local playerutils = require("utils.playerutils")
+
 ---@class Command
 ---@field type string
 ---@field payload any
@@ -316,10 +318,11 @@ function ClientManager:process_mod_command(cmd)
     self.hintable_locations = cmd.payload
   end
   if cmd.type == "Kill" then
-    if self.options.death_link_severity == 0 and not Isaac.GetPlayer():IsInvincible() then
-      Isaac.GetPlayer():TakeDamage(4, DamageFlag.DAMAGE_TIMER, EntityRef(Isaac.GetPlayer()), 0)
-    elseif self.options.death_link_severity == 1 and not Isaac.GetPlayer():IsInvincible() then
-      Isaac.GetPlayer():Kill()
+    local randomPlayer = GetRandomPlayer()
+    if self.options.death_link_severity == 0 and not randomPlayer:IsInvincible() then
+      randomPlayer:TakeDamage(4, DamageFlag.DAMAGE_TIMER, EntityRef(randomPlayer), 0)
+    elseif self.options.death_link_severity == 1 and not randomPlayer:IsInvincible() then
+      randomPlayer:Kill()
     else
       Game():End(1)
     end
