@@ -20,7 +20,7 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Item groups and location groups
 - [ ] Bosssanity
 - [ ] Monstersanity
-- [ ] Show unchecked locations per floor in game
+- [x] ~~Show unchecked locations per floor in game~~
 - [x] ~~Show sent/received item history in game~~
 
 ### Bugs
