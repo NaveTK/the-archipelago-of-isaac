@@ -6,6 +6,7 @@ local DEBUG = true
 ---@field location_manager LocationManager
 ---@field progression_manager ProgressionManager
 ---@field notification_manager NotificationManager
+---@field player_utils PlayerUtils
 local mod = RegisterMod('The Archipelago of Isaac', 1)
 
 mod.client_manager = include('clientmanager')
@@ -13,6 +14,8 @@ mod.item_manager = include('itemmanager')
 mod.location_manager = include('locationmanager')
 mod.progression_manager = include('progressionmanager')
 mod.notification_manager = include('notificationmanager')
+mod.player_utils = include('playerutils')
+mod.player_utils:Init(mod)
 mod.client_manager:Init(mod)
 mod.item_manager:Init(mod)
 mod.location_manager:Init(mod)
