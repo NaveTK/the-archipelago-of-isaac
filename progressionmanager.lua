@@ -159,7 +159,7 @@ function ProgressionManager:get_current_stage_name(--[[optional]] stageType)
     local firstStage = math.floor((stage - 1) / 2) * 2 + 1
     if self.mod.client_manager.options.floor_variations then
       return stage_names[tostring(firstStage) .. '_' .. tostring(type)]
-    elseif Game():GetLevel():IsAltStage() then
+    elseif type >= StageType.STAGETYPE_REPENTANCE then
       return stage_names[tostring(firstStage) .. '_4']
     else
       return stage_names[tostring(firstStage) .. '_0']
@@ -290,6 +290,8 @@ function ProgressionManager:on_new_level_post_reroll()
     end
   end
   self.mod.client_manager:update_run_info()
+
+  self.mod.location_manager:recalculate_location_icons()
 end
 
 local function valueInList(value, list)

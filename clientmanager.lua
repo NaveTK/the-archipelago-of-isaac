@@ -34,6 +34,11 @@
 ---@field exclude_items_as_rewards string[]
 ---@field floor_variations boolean
 ---@field death_link_severity integer
+---@field rng_rooms integer
+---@field ultra_secret_room integer
+---@field error_room integer
+---@field crawl_space integer
+---@field planetarium integer
 
 ---@class Hint
 ---@field receiving_player integer
@@ -95,13 +100,11 @@ local json = require('json')
 ---@field hintable_locations integer[]
 ---@field forbidden_items integer[]
 ---@field block_death_link integer
----@field trigger_deathlink boolean
 local ClientManager = {
   state = "Disconnected",
   session_id = "",
   commands_to_be_sent = {},
-  block_death_link = 0,
-  trigger_deathlink = false
+  block_death_link = 0
 }
 
 function ClientManager:own_game()
@@ -139,6 +142,48 @@ function ClientManager:get_location_id(name)
   return nil
 end
 
+local function valueInList(value, list)
+  for _, v in ipairs(list) do
+    if v == value then
+      return true
+    end
+  end
+  return false
+end
+
+local function pairsByKeys(t, f)
+  local a = {}
+  for n in pairs(t) do table.insert(a, tonumber(n)) end
+  table.sort(a, f)
+  local i = 0      -- iterator variable
+  local iter = function ()   -- iterator function
+    i = i + 1
+    if a[i] == nil then return nil
+    else return a[i], t[tostring(a[i])]
+    end
+  end
+  return iter
+end
+
+function ClientManager:get_floor_locations(floor, chapter)
+  local locations = {}
+  for code, location in pairsByKeys(self.location_names) do
+    if not valueInList(tonumber(code), self.checked_locations) and not valueInList(tonumber(code), self.missing_locations) then
+      goto continue
+    end
+    if location:find('^' .. floor) then
+      table.insert(locations, { name = location:sub(#floor + 4), completed = valueInList(tonumber(code), self.checked_locations)})
+      self.mod.dbg("Location on floor " .. floor .. " - " .. location .. "[" .. code .. "]")
+    end
+    if location:find('^' .. chapter) then
+      table.insert(locations, { name = location:sub(#chapter + 4), completed = valueInList(tonumber(code), self.checked_locations)})
+      self.mod.dbg("Location on chapter " .. chapter .. " - " .. location .. "[" .. code .. "]")
+    end
+    ::continue::
+  end
+  return locations
+end
+
 ---@param item NetworkItem
 ---@param notification boolean
 function ClientManager:add_available_item(item, notification)
@@ -157,15 +202,19 @@ function ClientManager:add_available_item(item, notification)
       self.mod.notification_manager:show_fortune(item_name .. 'ed', sub)
       if item_name == 'We Need To Go Deeper! Unlock' then
         self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_WE_NEED_TO_GO_DEEPER)
+        self.mod.location_manager:recalculate_location_icons()
       end
       if item_name == 'Undefined Unlock' then
         self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_UNDEFINED)
+        self.mod.location_manager:recalculate_location_icons()
       end
       if item_name == 'Telescope Lens Unlock' then
-          self.mod.item_manager.consumable_queue:push(TrinketType.TRINKET_TELESCOPE_LENS)
+        self.mod.item_manager.consumable_queue:push(TrinketType.TRINKET_TELESCOPE_LENS)
+        self.mod.location_manager:recalculate_location_icons()
       end
       if item_name == 'Red Key Unlock' then
         self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_RED_KEY)
+        self.mod.location_manager:recalculate_location_icons()
       end
       self.mod.progression_manager:check_special_exits()
     else
@@ -231,6 +280,8 @@ function ClientManager:process_mod_command(cmd)
       self.location_ids[name] = id
     end
     self.mod.item_manager:give_items()
+
+    self.mod.location_manager:recalculate_location_icons()
   end
   if cmd.type == "ReceiveItems" then
     local items = cmd.payload
@@ -265,7 +316,14 @@ function ClientManager:process_mod_command(cmd)
     self.hintable_locations = cmd.payload
   end
   if cmd.type == "Kill" then
-    self.trigger_deathlink = true
+    if self.options.death_link_severity == 0 and not Isaac.GetPlayer():IsInvincible() then
+      Isaac.GetPlayer():TakeDamage(4, DamageFlag.DAMAGE_TIMER, EntityRef(Isaac.GetPlayer()), 0)
+    elseif self.options.death_link_severity == 1 and not Isaac.GetPlayer():IsInvincible() then
+      Isaac.GetPlayer():Kill()
+    else
+      Game():End(1)
+    end
+    self.block_death_link = Game().TimeCounter + 90
   end
 end
 
@@ -275,14 +333,6 @@ function ClientManager:has_unlock(item)
   return self.available_items and self.available_items[item .. ' Unlock'] and self.available_items[item .. ' Unlock'] > 0
 end
 
-local function valueInList(value, list)
-  for _, v in ipairs(list) do
-    if v == value then
-      return true
-    end
-  end
-  return false
-end
 
 local function removeValueFromList(value, list)
   for i=#list,1,-1 do
@@ -342,7 +392,9 @@ function ClientManager:unlock_locations(names)
           b = 0.25
         end
         self.mod.notification_manager:add_log({{'You sent ', 1, 1, 1}, {item_name, r, g, b}, {' to ', 1, 1, 1},{self:get_player_name(item.player), 1, 1, 0.75}, {' (', 1, 1, 1}, {self:get_location_name(item.location), 0, 0.9, 0.25}, {')', 1, 1, 1}})
+
       end
+      self.mod.location_manager:recalculate_location_icons()
     end
   end
   if #loc_ids > 0 then
@@ -460,7 +512,7 @@ function ClientManager:on_post_render()
 end
 
 function ClientManager:send_death()
-  if Isaac.GetTime() < self.block_death_link then return end
+  if Game().TimeCounter < self.block_death_link then return end
   self.mod.dbg("Send death")
   table.insert(self.commands_to_be_sent, {
     type = "Died",
@@ -532,27 +584,11 @@ function ClientManager:send_hint()
 
 end
 
-function ClientManager:on_post_update()
-  if not Game():IsPaused() and self.trigger_deathlink then
-    if self.options.death_link_severity == 0 and not Isaac.GetPlayer():IsInvincible() then
-      Isaac.GetPlayer():TakeDamage(4, DamageFlag.DAMAGE_TIMER, EntityRef(Isaac.GetPlayer()), 0)
-    elseif self.options.death_link_severity == 1 and not Isaac.GetPlayer():IsInvincible() then
-      Isaac.GetPlayer():Kill()
-    else
-      Game():End(1)
-    end
-    self.block_death_link = Isaac.GetTime() + 5000
-    self.trigger_deathlink = false
-  end
-end
-
 ---@param mod ModReference
 function ClientManager:Init(mod)
   self.mod = mod
 
   mod:AddCallback(ModCallbacks.MC_POST_RENDER, function() self:on_post_render() end)
-  mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() self:on_post_update() end)
-
 end
 
 return ClientManager

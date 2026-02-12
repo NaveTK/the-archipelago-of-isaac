@@ -73,13 +73,9 @@ function NotificationManager:on_post_render()
       end
     end
 
-    if self.logs.size > 0 then
-      Isaac.RenderScaledText('(F2 to hide AP history)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
-    end
+    Isaac.RenderScaledText('(F2 to hide AP infos)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
   else
-    if self.logs.size > 0 then
-      Isaac.RenderScaledText('(F2 to show AP history)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
-    end
+    Isaac.RenderScaledText('(F2 to show AP infos)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
   end
 end
 
