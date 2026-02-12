@@ -20,12 +20,17 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Item groups and location groups
 - [ ] Bosssanity
 - [ ] Monstersanity
+- [x] ~~Co-Op now better supported (AP related mechanics now target either a random or all players instead of always player 1)~~
 - [x] ~~Show unchecked locations per floor in game~~
 - [x] ~~Show sent/received item history in game~~
 
 ### Bugs
 - [ ] Victory runs shouldn't count
 - [ ] Lost soul sometimes gives rewards even if it died last floor
+- [ ] Universal Tracker crashes on connection
+- [ ] Teleporting to Dark Room from Cathedral via Sacrifice Room counts Dark Room checks as Chest checks
+- [ ] Arcades are in logic for Sheol and Cathedral when they're unable to spawn there
+- [ ] Tear stat can underflow on certain characters when maxing out the Starting out nerfed option
 - [x] ~~Random lag spikes~~
 - [x] ~~Portals/Trapdoors/Exits don't respawn if location is sent after they have already been removed~~
 - [x] ~~Boss rush / Hush door should not be removed if Mama Mega was used, even if still locked~~
