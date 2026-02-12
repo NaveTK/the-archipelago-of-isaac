@@ -125,8 +125,10 @@ function ItemManager:init_new_run()
   end
 
   if self.mod.client_manager.options.start_out_nerfed > 0 then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_RANGE | CacheFlag.CACHE_SPEED | CacheFlag.CACHE_LUCK)
-      Isaac.GetPlayer():EvaluateItems()
+    for _, player in ipairs(self.mod.player_utils:GetAllActivePlayers()) do
+      player:AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_RANGE | CacheFlag.CACHE_SPEED | CacheFlag.CACHE_LUCK)
+      player:EvaluateItems()
+    end
   end
 end
 
@@ -195,26 +197,28 @@ function ItemManager:give_item(itemType)
       self.give_queue:push(CollectibleType.COLLECTIBLE_BLUE_MAP)
     end
   elseif itemType:find('^Permanent') then
-    if itemType:find('Damage') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_DAMAGE)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_UNHOLY)
-    elseif itemType:find('Tears') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_TEARS_UP)
-    elseif itemType:find('Range') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_RANGE)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_RANGE_UP)
-    elseif itemType:find('Speed') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_SPEED)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_SPEED_UP)
-    elseif itemType:find('Luck') then
-      Isaac.GetPlayer():AddCacheFlags(CacheFlag.CACHE_LUCK)
-      Isaac.GetPlayer():EvaluateItems()
-      SFXManager():Play(SoundEffect.SOUND_LUCK_UP)
+    for _, player in ipairs(self.mod.player_utils:GetAllActivePlayers()) do
+      if itemType:find('Damage') then
+        player:AddCacheFlags(CacheFlag.CACHE_DAMAGE)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_UNHOLY)
+      elseif itemType:find('Tears') then
+        player:AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_TEARS_UP)
+      elseif itemType:find('Range') then
+        player:AddCacheFlags(CacheFlag.CACHE_RANGE)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_RANGE_UP)
+      elseif itemType:find('Speed') then
+        player:AddCacheFlags(CacheFlag.CACHE_SPEED)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_SPEED_UP)
+      elseif itemType:find('Luck') then
+        player:AddCacheFlags(CacheFlag.CACHE_LUCK)
+        player:EvaluateItems()
+        SFXManager():Play(SoundEffect.SOUND_LUCK_UP)
+      end
     end
   else
     self.mod.dbg('Unknown item type: ' .. itemType)
@@ -291,26 +295,27 @@ function ItemManager:queue_item_from_pool(poolType)
 end
 
 function ItemManager:give_next()  
+  local randomPlayer = self.mod.player_utils:GetRandomPlayer()
   if self.give_queue.size > 0 then
     local item_id = self.give_queue:pop()
     if item_id then
       self.mod.dbg('Give Item with id: ' .. tostring(item_id))
       local cfgItem = Isaac.GetItemConfig():GetCollectible(item_id)
       if cfgItem.Type == ItemType.ITEM_ACTIVE then
-        local pos = Vector(Isaac.GetPlayer().Position.X + rng:RandomInt(80) - 40, Isaac.GetPlayer().Position.Y + rng:RandomInt(80) - 40)
+        local pos = Vector(randomPlayer.Position.X + rng:RandomInt(80) - 40, randomPlayer.Position.Y + rng:RandomInt(80) - 40)
         self.mod.dbg('LOCK ITEM SET TO TRUE!')
         self.lock_item = true
         Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item_id, pos, Vector.Zero, nil)
       else
-        Isaac.GetPlayer():AnimateCollectible(item_id, 'Pickup', 'PlayerPickupSparkle')
-        Isaac.GetPlayer():QueueItem(cfgItem, 0, false, false, 0)
+        randomPlayer:AnimateCollectible(item_id, 'Pickup', 'PlayerPickupSparkle')
+        randomPlayer:QueueItem(cfgItem, 0, false, false, 0)
       end
       if item_id == CollectibleType.COLLECTIBLE_1UP then
         SFXManager():Play(SoundEffect.SOUND_1UP)
       else
         SFXManager():Play(SoundEffect.SOUND_POWERUP1)
       end
-      --Game():GetHUD():ShowItemText(Isaac.GetPlayer(), cfgItem, true)
+      --Game():GetHUD():ShowItemText(player, cfgItem, true)
       self.queue_timer = 15
       return
     end
@@ -319,7 +324,7 @@ function ItemManager:give_next()
     local consumable = self.consumable_queue:pop()
     
     if consumable then
-      local pos = Vector(Isaac.GetPlayer().Position.X + rng:RandomInt(80) - 40, Isaac.GetPlayer().Position.Y + rng:RandomInt(80) - 40)
+      local pos = Vector(randomPlayer.Position.X + rng:RandomInt(80) - 40, randomPlayer.Position.Y + rng:RandomInt(80) - 40)
       if consumable ~= TrinketType.TRINKET_TELESCOPE_LENS then
         Isaac.Spawn(EntityType.ENTITY_PICKUP, consumable, 0, pos, Vector.Zero, nil)
       else
@@ -333,21 +338,29 @@ function ItemManager:give_next()
   if self.trap_queue.size > 0 then
     local trap = self.trap_queue:pop()
     self.mod.dbg('Activating trap: ' .. trap)
-    if trap == 'Curse Trap' and not Isaac.GetPlayer():HasCollectible(CollectibleType.COLLECTIBLE_BLACK_CANDLE) then
+    local players = self.mod.player_utils:GetAllActivePlayers()
+    if trap == 'Curse Trap' then
+      for _, player in ipairs(players) do
+        if player:HasCollectible(CollectibleType.COLLECTIBLE_BLACK_CANDLE) then
+          return
+        end
+      end
       local curses = {LevelCurse.CURSE_OF_BLIND, LevelCurse.CURSE_OF_DARKNESS, LevelCurse.CURSE_OF_THE_UNKNOWN, LevelCurse.CURSE_OF_THE_LOST}
       Game():GetLevel():AddCurse(curses[rng:RandomInt(4) + 1], false)
       rng:Next()
     elseif trap == 'Paralysis Trap' then
-      Isaac.GetPlayer():UsePill(PillEffect.PILLEFFECT_PARALYSIS, PillColor.PILL_WHITE_WHITE, UseFlag.USE_NOANIM)
+      for _, player in ipairs(players) do
+       player:UsePill(PillEffect.PILLEFFECT_PARALYSIS, PillColor.PILL_WHITE_WHITE, UseFlag.USE_NOANIM)
+      end
     elseif trap == 'Retro Vision Trap' then
-      Isaac.GetPlayer():UsePill(PillEffect.PILLEFFECT_RETRO_VISION, PillColor.PILL_WHITE_WHITE, UseFlag.USE_NOANIM)
+      randomPlayer:UsePill(PillEffect.PILLEFFECT_RETRO_VISION, PillColor.PILL_WHITE_WHITE, UseFlag.USE_NOANIM)
     elseif trap == 'Teleport Trap' then
-      Isaac.GetPlayer():UsePill(PillEffect.PILLEFFECT_TELEPILLS, PillColor.PILL_WHITE_WHITE, UseFlag.USE_NOANIM)
+      randomPlayer:UsePill(PillEffect.PILLEFFECT_TELEPILLS, PillColor.PILL_WHITE_WHITE, UseFlag.USE_NOANIM)
     elseif trap == 'Troll Bomb Trap' then
-      local pos = Vector(Isaac.GetPlayer().Position.X + rng:RandomInt(80) - 40, Isaac.GetPlayer().Position.Y + rng:RandomInt(80) - 40)
+      local pos = Vector(randomPlayer.Position.X + rng:RandomInt(80) - 40, randomPlayer.Position.Y + rng:RandomInt(80) - 40)
       Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_BOMB, BombSubType.BOMB_SUPERTROLL, pos, Vector.Zero, nil)
     elseif trap == 'Wavy Cap Trap' then
-      Isaac.GetPlayer():UseActiveItem(CollectibleType.COLLECTIBLE_WAVY_CAP, UseFlag.USE_NOANIM)
+      randomPlayer:UseActiveItem(CollectibleType.COLLECTIBLE_WAVY_CAP, UseFlag.USE_NOANIM)
     end
     self.queue_timer = 3
   end
