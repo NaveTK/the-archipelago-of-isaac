@@ -23,6 +23,10 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [x] ~~Co-Op now better supported (AP related mechanics now target either a random or all players instead of always player 1)~~
 - [x] ~~Show unchecked locations per floor in game~~
 - [x] ~~Show sent/received item history in game~~
+- [ ] API Updates for [this post](https://discord.com/channels/731205301247803413/1467222232626495582/1472675797121765639)
+- [ ] Option to en/disable Planetarium in Womb
+- [ ] Options to determine what gets put into logic with Shovel, Undefined, Red Key start items
+- [ ] Options for "weaker" once per floor quest items (Sould of cain instead of red key, ehwaz instead of shovel)
 
 ### Bugs
 - [ ] Victory runs shouldn't count
