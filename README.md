@@ -37,6 +37,7 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Teleporting to Dark Room from Cathedral via Sacrifice Room counts Dark Room checks as Chest checks
 - [ ] Arcades are in logic for Sheol and Cathedral when they're unable to spawn there
 - [ ] Tear stat can underflow on certain characters when maxing out the Starting out nerfed option
+- [ ] Escape in logic without Downpour/Dross
 - [x] ~~Random lag spikes~~
 - [x] ~~Portals/Trapdoors/Exits don't respawn if location is sent after they have already been removed~~
 - [x] ~~Boss rush / Hush door should not be removed if Mama Mega was used, even if still locked~~
