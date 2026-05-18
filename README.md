@@ -23,6 +23,7 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Client command to change slot
 - [ ] Client command to reselect installation path
 - [ ] Client command to toggle death link
+- [ ] Slow release 
 - [x] ~~Co-Op now better supported (AP related mechanics now target either a random or all players instead of always player 1)~~
 - [x] ~~Show unchecked locations per floor in game~~
 - [x] ~~Show sent/received item history in game~~
