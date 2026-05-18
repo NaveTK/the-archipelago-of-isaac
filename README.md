@@ -22,6 +22,7 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Monstersanity
 - [ ] Client command to change slot
 - [ ] Client command to reselect installation path
+- [ ] Client command to toggle death link
 - [x] ~~Co-Op now better supported (AP related mechanics now target either a random or all players instead of always player 1)~~
 - [x] ~~Show unchecked locations per floor in game~~
 - [x] ~~Show sent/received item history in game~~
@@ -29,6 +30,8 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Option to en/disable Planetarium in Womb
 - [ ] Options to determine what gets put into logic with Shovel, Undefined, Red Key start items
 - [ ] Options for "weaker" once per floor quest items (Sould of cain instead of red key, ehwaz instead of shovel)
+- [ ] Change keybind to F3 to hide overlay
+- [ ] T-Cain receiving consumables instead of items
 
 ### Bugs
 - [ ] Victory runs shouldn't count
