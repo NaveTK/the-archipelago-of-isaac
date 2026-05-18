@@ -48,3 +48,5 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [x] ~~Corpse trapdoor doesn't spawn without womb/utero/scarred womb~~
 - [x] ~~Alt floor checks don't send with floor variants turned off~~
 - [ ] R-Key after finishing may be problematic
+- [ ] Womb entrance in dad's note room
+- [ ] Corpse trapdoor doesnt spawn without womb unlocked
