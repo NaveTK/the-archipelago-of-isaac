@@ -51,3 +51,4 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] R-Key after finishing may be problematic
 - [ ] Womb entrance in dad's note room
 - [ ] Corpse trapdoor doesnt spawn without womb unlocked
+- [ ] Void portal sometimes not removed when still locked
