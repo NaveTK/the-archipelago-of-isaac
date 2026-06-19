@@ -40,6 +40,7 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Universal Tracker crashes on connection
 - [ ] Teleporting to Dark Room from Cathedral via Sacrifice Room counts Dark Room checks as Chest checks
 - [ ] Arcades are in logic for Sheol and Cathedral when they're unable to spawn there
+- [ ] Bedrooms are in logic for chapter 4 and 5 even though they only spawn on 1-3
 - [ ] Tear stat can underflow on certain characters when maxing out the Starting out nerfed option
 - [ ] Escape in logic without Downpour/Dross
 - [x] ~~Random lag spikes~~
