@@ -52,7 +52,7 @@ function NotificationManager:add_log(log)
 end
 
 function NotificationManager:on_post_render()
-  if Input.IsButtonTriggered(Keyboard.KEY_F2, 0) then
+  if Input.IsButtonTriggered(Keyboard.KEY_F3, 0) then
     self.show_logs = not self.show_logs
   end
 
@@ -73,9 +73,9 @@ function NotificationManager:on_post_render()
       end
     end
 
-    Isaac.RenderScaledText('(F2 to hide AP infos)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
+    Isaac.RenderScaledText('(F3 to hide AP infos)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
   else
-    Isaac.RenderScaledText('(F2 to show AP infos)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
+    Isaac.RenderScaledText('(F3 to show AP infos)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
   end
 end
 

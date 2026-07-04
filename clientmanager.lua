@@ -237,6 +237,7 @@ local forbidden_items_dict = {
   ["Missing No"] = CollectibleType.COLLECTIBLE_MISSING_NO,
   ["Shard of Glass"] = CollectibleType.COLLECTIBLE_SHARD_OF_GLASS,
   ["TMTrainer"] = CollectibleType.COLLECTIBLE_TMTRAINER,
+  ["Ipecac"] = CollectibleType.COLLECTIBLE_IPECAC,
   ["Bob's Brain"] = CollectibleType.COLLECTIBLE_BOBS_BRAIN,
   ["Dr. Fetus"] = CollectibleType.COLLECTIBLE_DR_FETUS,
   ["Epic Fetus"] = CollectibleType.COLLECTIBLE_EPIC_FETUS,
