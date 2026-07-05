@@ -68,14 +68,14 @@ function NotificationManager:on_post_render()
       end
       local x = 80
       for _, segment in ipairs(log) do
-        Isaac.RenderScaledText(segment[1], x, 270 - i * 7, 0.5, 0.5, segment[2], segment[3], segment[4], alpha)
+        Isaac.RenderScaledText(segment[1], x, Isaac.GetScreenHeight() - i * 7, 0.5, 0.5, segment[2], segment[3], segment[4], alpha)
         x = x + Isaac.GetTextWidth(segment[1]) * 0.5
       end
     end
 
-    Isaac.RenderScaledText('(F3 to hide AP infos)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
+    Isaac.RenderScaledText('(F3 to hide AP infos)', 3, Isaac.GetScreenHeight() - 7, 0.5, 0.5, 1, 1, 1, 0.25)
   else
-    Isaac.RenderScaledText('(F3 to show AP infos)', 3, 263, 0.5, 0.5, 1, 1, 1, 0.25)
+    Isaac.RenderScaledText('(F3 to show AP infos)', 3, Isaac.GetScreenHeight() - 7, 0.5, 0.5, 1, 1, 1, 0.25)
   end
 end
 

@@ -7,7 +7,7 @@ local DEBUG = true
 ---@field progression_manager ProgressionManager
 ---@field notification_manager NotificationManager
 ---@field player_utils PlayerUtils
-local mod = RegisterMod('! The Archipelago of Isaac', 1)
+local mod = RegisterMod('!The Archipelago of Isaac', 1)
 
 mod.client_manager = include('clientmanager')
 mod.item_manager = include('itemmanager')

@@ -102,7 +102,7 @@ function ProgressionManager:get_unlocked_stage_types(currentStage, currentStageT
     if currentStageType == StageType.STAGETYPE_REPENTANCE or currentStageType == StageType.STAGETYPE_REPENTANCE_B then --Womb/Utero/Scarred Womb
     -- nothing
     else --Womb/Utero/Scarred Womb
-      if self:has_unlock('Womb') or self:has_unlock('We Need To Go Deeper!') then
+      if self:has_unlock('Womb') or self:has_unlock('We Need To Go Deeper!') or self:has_unlock('Ehwaz') or self:has_unlock('Soul of Cain') or self:has_unlock('Red Key') or self:has_unlock('Undefined') then
         table.insert(available_types, StageType.STAGETYPE_ORIGINAL)
       end
       if self:has_unlock('Utero') then
@@ -169,7 +169,7 @@ function ProgressionManager:get_current_stage_name(--[[optional]] stageType)
     return stage_names[tostring(stage)]
   end
   if stage == LevelStage.STAGE5 or stage == LevelStage.STAGE6 then
-    if Game():GetStateFlag(GameStateFlag.STATE_HEAVEN_PATH) then
+    if Game():GetLevel():GetStageType() == StageType.STAGETYPE_WOTL then
       return stage_names[tostring(stage) .. '_Polaroid']
     else
       return stage_names[tostring(stage) .. '_Negative']
@@ -357,6 +357,8 @@ function ProgressionManager:should_have_doors()
 end
 
 function ProgressionManager:check_special_exits()
+  if Game():GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH_INIT) or Game():GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH) then return end
+
   local has_door_types = {}
   local has_door_indexes = {}
   for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do
@@ -387,14 +389,15 @@ function ProgressionManager:check_special_exits()
   end
   if moms_foot_floor and is_boss then
     local trapdoor = Game():GetRoom():GetGridEntity(37)
+    local is_real = trapdoor ~= nil and trapdoor:GetType() == GridEntityType.GRID_TRAPDOOR
     self.mod.dbg('Checking for trapdoor to Womb: ' .. tostring(trapdoor ~= nil))
-    if trapdoor and not Game():GetStateFlag(GameStateFlag.STATE_MAUSOLEUM_HEART_KILLED) and not self.mod.client_manager:has_unlock('Womb') and not self.mod.client_manager:has_unlock('Utero') and not self.mod.client_manager:has_unlock('Scarred Womb') then
+    if trapdoor and is_real and not Game():GetStateFlag(GameStateFlag.STATE_MAUSOLEUM_HEART_KILLED) and not self.mod.client_manager:has_unlock('Womb') and not self.mod.client_manager:has_unlock('Utero') and not self.mod.client_manager:has_unlock('Scarred Womb') then
       self.mod.dbg('Removing trapdoor to Womb and spawning trophy')
       Game():GetRoom():RemoveGridEntity(trapdoor:GetGridIndex(), 0, false)
       if Game():GetRoom():IsClear() then
         Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TROPHY, 0, Game():GetRoom():GetCenterPos(), Vector.Zero, nil)
       end
-    elseif Game():GetRoom():IsClear() and not trapdoor and (Game():GetStateFlag(GameStateFlag.STATE_MAUSOLEUM_HEART_KILLED) or self.mod.client_manager:has_unlock('Womb') or self.mod.client_manager:has_unlock('Utero') or self.mod.client_manager:has_unlock('Scarred Womb')) then
+    elseif Game():GetRoom():IsClear() and not is_real and (Game():GetStateFlag(GameStateFlag.STATE_MAUSOLEUM_HEART_KILLED) or self.mod.client_manager:has_unlock('Womb') or self.mod.client_manager:has_unlock('Utero') or self.mod.client_manager:has_unlock('Scarred Womb')) then
       self.mod.dbg('Restoring trapdoor to Womb')
       Game():GetRoom():SpawnGridEntity(37, GridEntityType.GRID_TRAPDOOR, 0, RNG():Next(), 0)
     end
@@ -442,16 +445,18 @@ function ProgressionManager:check_special_exits()
 
   if moms_foot_floor or moms_heart_floor or Game():GetLevel():GetStage() >= LevelStage.STAGE4_3 then
     if (is_boss or Game():GetLevel():GetCurrentRoomIndex() == -9 or Game():GetLevel():GetCurrentRoomIndex() == -10 or Game():GetLevel():GetCurrentRoomIndex() == -7) then
-      local portal_position = 97
-      if Game():GetLevel():GetCurrentRoomIndex() == -10 then
-        portal_position = 172
+      --Check all grid positions for portal
+      
+      local portal_position = -1
+
+      for i = 0, Game():GetRoom():GetGridSize() - 1 do
+        local grid_entity = Game():GetRoom():GetGridEntity(i)
+        if grid_entity and grid_entity:GetType() == GridEntityType.GRID_TRAPDOOR and grid_entity:GetVariant() == 1 then
+            portal_position = i
+          break
+        end
       end
-      if Game():GetLevel():GetCurrentRoomIndex() == -9 then
-        portal_position = 67
-      end
-      if Game():GetLevel():GetCurrentRoomIndex() == -7 then
-        portal_position = 157
-      end
+      
       local portal = Game():GetRoom():GetGridEntity(portal_position)
       self.mod.dbg('Checking for portal to The Void: ' .. tostring(portal ~= nil))
       if portal and not self.mod.client_manager:has_unlock('Void Portal') then

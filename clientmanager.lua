@@ -90,6 +90,7 @@ local json = require('json')
 ---@field received_items NetworkItem[]
 ---@field available_items table<string, integer>
 ---@field goals table<string, boolean>
+---@field goal_characters table<string, string[]>
 ---@field item_names table<string, table<integer, string>>
 ---@field location_names table<string, string>
 ---@field location_ids table<string, string>
@@ -204,6 +205,10 @@ function ClientManager:add_available_item(item, notification)
         self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_WE_NEED_TO_GO_DEEPER)
         self.mod.location_manager:recalculate_location_icons()
       end
+      if item_name == 'Ehwaz Unlock' then
+        self.mod.item_manager.consumable_queue:push({Variant=PickupVariant.PICKUP_TAROTCARD, SubType=Card.RUNE_EHWAZ})
+        self.mod.location_manager:recalculate_location_icons()
+      end
       if item_name == 'Undefined Unlock' then
         self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_UNDEFINED)
         self.mod.location_manager:recalculate_location_icons()
@@ -214,6 +219,10 @@ function ClientManager:add_available_item(item, notification)
       end
       if item_name == 'Red Key Unlock' then
         self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_RED_KEY)
+        self.mod.location_manager:recalculate_location_icons()
+      end
+      if item_name == 'Soul of Cain Unlock' then
+        self.mod.item_manager.consumable_queue:push({Variant=PickupVariant.PICKUP_TAROTCARD, SubType=Card.CARD_SOUL_CAIN})
         self.mod.location_manager:recalculate_location_icons()
       end
       self.mod.progression_manager:check_special_exits()
@@ -244,6 +253,58 @@ local forbidden_items_dict = {
   ["Fire Mind"] = CollectibleType.COLLECTIBLE_FIRE_MIND
 }
 
+local character_to_type = {
+  ["Isaac"] = PlayerType.PLAYER_ISAAC,
+  ["Magdalene"] = PlayerType.PLAYER_MAGDALENE,
+  ["Cain"] = PlayerType.PLAYER_CAIN,
+  ["Judas"] = PlayerType.PLAYER_JUDAS,
+  ["???"] = PlayerType.PLAYER_BLUEBABY,
+  ["Eve"] = PlayerType.PLAYER_EVE,
+  ["Samson"] = PlayerType.PLAYER_SAMSON,
+  ["Azazel"] = PlayerType.PLAYER_AZAZEL,
+  ["Lazarus"] = PlayerType.PLAYER_LAZARUS,
+  ["Eden"] = PlayerType.PLAYER_EDEN,
+  ["The Lost"] = PlayerType.PLAYER_THELOST,
+  ["Lilith"] = PlayerType.PLAYER_LILITH,
+  ["Keeper"] = PlayerType.PLAYER_KEEPER,
+  ["Apollyon"] = PlayerType.PLAYER_APOLLYON,
+  ["The Forgotten"] = PlayerType.PLAYER_THEFORGOTTEN,
+  ["Bethany"] = PlayerType.PLAYER_BETHANY,
+  ["Jacob & Esau"] = PlayerType.PLAYER_JACOB,
+  ["Tainted Isaac"] = PlayerType.PLAYER_ISAAC_B,
+  ["Tainted Magdalene"] = PlayerType.PLAYER_MAGDALENE_B,
+  ["Tainted Cain"] = PlayerType.PLAYER_CAIN_B,
+  ["Tainted Judas"] = PlayerType.PLAYER_JUDAS_B,
+  ["Tainted ???"] = PlayerType.PLAYER_BLUEBABY_B,
+  ["Tainted Eve"] = PlayerType.PLAYER_EVE_B,
+  ["Tainted Samson"] = PlayerType.PLAYER_SAMSON_B,
+  ["Tainted Azazel"] = PlayerType.PLAYER_AZAZEL_B,
+  ["Tainted Lazarus"] = PlayerType.PLAYER_LAZARUS_B,
+  ["Tainted Eden"] = PlayerType.PLAYER_EDEN_B,
+  ["Tainted Lost"] = PlayerType.PLAYER_THELOST_B,
+  ["Tainted Lilith"] = PlayerType.PLAYER_LILITH_B,
+  ["Tainted Keeper"] = PlayerType.PLAYER_KEEPER_B,
+  ["Tainted Apollyon"] = PlayerType.PLAYER_APOLLYON_B,
+  ["Tainted Forgotten"] = PlayerType.PLAYER_THEFORGOTTEN_B,
+  ["Tainted Bethany"] = PlayerType.PLAYER_BETHANY_B,
+  ["Tainted Jacob"] = PlayerType.PLAYER_JACOB_B,
+}
+
+---@param playerType PlayerType
+---@param boss string
+---@return boolean
+function ClientManager:isValidCharacterForBoss(playerType, boss)
+  if not self.goal_characters then return true end
+  if not self.goal_characters[boss] then return true end
+  for _, character in ipairs(self.goal_characters[boss]) do
+    self.mod.dbg("Checking character " .. character .. " for boss " .. boss .. " against player type " .. tostring(playerType))
+    if character_to_type[character] == playerType then
+      return true
+    end
+  end
+  return false
+end
+
 ---@param cmd Command
 function ClientManager:process_mod_command(cmd)
   self.mod.dbg('Command type: ' .. cmd.type)
@@ -252,6 +313,11 @@ function ClientManager:process_mod_command(cmd)
     self.session_id = cmd.payload["session_id"]
     self.run_info = cmd.payload["run_info"]
     self.goals = cmd.payload["goals"]
+    if cmd.payload["goal_characters"] == nil then
+      self.goal_characters = nil
+    else
+      self.goal_characters = cmd.payload["goal_characters"]
+    end
     self.checked_locations = cmd.payload["checked_locations"]
     self.missing_locations = cmd.payload["missing_locations"]
     self.received_items = cmd.payload["received_items"]
@@ -364,6 +430,8 @@ end
 
 ---@param names string[]
 function ClientManager:unlock_locations(names)
+  if Game():GetVictoryLap() > 0 then return end
+
   local loc_ids = {}
   for _, name in ipairs(names) do
     local id = self:get_location_id(name)
@@ -499,10 +567,16 @@ end
 function ClientManager:on_post_render()
   if self.state == "Connected" then
     Isaac.RenderScaledText('Connected', 2, 2, 0.5, 0.5, 0, 1, 0, 1)
-  elseif self.state == "Connecting" then
-    Isaac.RenderScaledText('Connecting', 2, 2, 0.5, 0.5, 1, 1, 0, 1)
+    local offset = Isaac.GetTextWidth('Connected') * 0.5 + 4
+    if not Isaac.GetItemConfig():GetCollectible(CollectibleType.COLLECTIBLE_POLAROID):IsAvailable() or not Isaac.GetItemConfig():GetCollectible(CollectibleType.COLLECTIBLE_NEGATIVE):IsAvailable() then
+      Isaac.RenderScaledText('Insufficient progression detected! (Archipelago is meant to be played on a save file that has all paths to the endgame bosses unlocked.)', offset + 2, 2, 0.5, 0.5, 1, 1, 0, 1)
+    elseif Game():GetVictoryLap() > 0 then
+      Isaac.RenderScaledText('(Checks are disabled during Victory Laps)', offset + 2, 2, 0.5, 0.5, 1, 1, 0, 1)
+    end
   else
     Isaac.RenderScaledText('Disconnected', 2, 2, 0.5, 0.5, 1, 0, 0, 1)
+    local offset = Isaac.GetTextWidth('Disconnected') * 0.5 + 4
+    Isaac.RenderScaledText('(Use the Isaac Client to connect)', offset + 2, 2, 0.5, 0.5, 1, 1, 0, 1)
   end
 
   if Isaac.GetFrameCount() % 12 == 0 and self.mod:HasData() then

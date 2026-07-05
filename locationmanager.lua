@@ -153,19 +153,19 @@ function LocationManager:get_main_boss()
   if Game():GetRoom():GetType() == RoomType.ROOM_BOSSRUSH then
     return 'Boss Rush'
   end
-  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE5 and Game():GetStateFlag(GameStateFlag.STATE_HEAVEN_PATH) then
+  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE5 and Game():GetLevel():GetStageType() == StageType.STAGETYPE_WOTL then
     return 'Isaac'
   end
-  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE5 and not Game():GetStateFlag(GameStateFlag.STATE_HEAVEN_PATH) then
+  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE5 and Game():GetLevel():GetStageType() == StageType.STAGETYPE_ORIGINAL then
     return 'Satan'
   end
   if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE4_3 then
     return 'Hush'
   end
-  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE6 and Game():GetStateFlag(GameStateFlag.STATE_HEAVEN_PATH) then
+  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE6 and Game():GetLevel():GetStageType() == StageType.STAGETYPE_WOTL then
     return 'Blue Baby'
   end
-  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE6 and not Game():GetStateFlag(GameStateFlag.STATE_HEAVEN_PATH) then
+  if is_boss and Game():GetLevel():GetStage() == LevelStage.STAGE6 and Game():GetLevel():GetStageType() == StageType.STAGETYPE_ORIGINAL then
     return 'The Lamb'
   end
   if Game():GetLevel():GetCurrentRoomIndex() == -7 and Game():GetLevel():GetStage() == LevelStage.STAGE6 then
@@ -201,15 +201,26 @@ local boss_rewards = {
 function LocationManager:room_cleared()
   local boss = self:get_main_boss()
   if boss then
-    if self.mod.client_manager.options.additional_boss_rewards then
-      local locations = {}
-      for i = 1, boss_rewards[boss]+1 do
-        table.insert(locations, boss .. ' Reward #' .. tostring(i))
+    self.mod.dbg('Boss cleared: ' .. boss)
+    local viable = false
+    for _, player in ipairs(self.mod.player_utils:GetAllActivePlayers()) do
+      local playerType = player:GetPlayerType()
+      if self.mod.client_manager:isValidCharacterForBoss(playerType, boss) then
+        viable = true
       end
-
-      self.mod.client_manager:unlock_locations(locations)
     end
-    self.mod.client_manager:send_goal(boss)
+
+    if viable then
+      if self.mod.client_manager.options.additional_boss_rewards then
+        local locations = {}
+        for i = 1, boss_rewards[boss]+1 do
+          table.insert(locations, boss .. ' Reward #' .. tostring(i))
+        end
+  
+        self.mod.client_manager:unlock_locations(locations)
+      end
+      self.mod.client_manager:send_goal(boss)
+    end
   end
   self:unlock_location()
 end
@@ -347,6 +358,8 @@ function LocationManager:recalculate_location_icons()
         postfix = '_No_Prio'
       elseif self.mod.client_manager.options.ultra_secret_room == 3 and not self.mod.client_manager:has_unlock("Red Key") then
         postfix = '_Locked'
+      elseif self.mod.client_manager.options.ultra_secret_room == 4 and not self.mod.client_manager:has_unlock("Soul of Cain") then
+        postfix = '_Locked'
       end
     end
     if name == "I AM ERROR" then
@@ -360,6 +373,8 @@ function LocationManager:recalculate_location_icons()
       if self.mod.client_manager.options.crawl_space == 1 then
         postfix = '_No_Prio'
       elseif self.mod.client_manager.options.crawl_space == 3 and not self.mod.client_manager:has_unlock("We Need To Go Deeper!") then
+        postfix = '_Locked'
+      elseif self.mod.client_manager.options.crawl_space == 4 and not self.mod.client_manager:has_unlock("Ehwaz") then
         postfix = '_Locked'
       end
     end
@@ -389,7 +404,7 @@ end
 function LocationManager:on_post_render()
   if not self.mod.notification_manager.show_logs then return end
   for i, icon in ipairs(self.location_icons) do
-    icon:RenderLayer(0, Vector(457 - (#self.location_icons - i) * 10, 4), Vector.Zero, Vector.Zero)
+    icon:RenderLayer(0, Vector(Isaac:GetScreenWidth() - 10 - (#self.location_icons - i) * 10, 4), Vector.Zero, Vector.Zero)
   end
 end
 

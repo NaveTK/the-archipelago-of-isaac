@@ -118,7 +118,7 @@ function ItemManager:init_new_run()
     self.give_queue:push(CollectibleType.COLLECTIBLE_UNDEFINED)
   end
   if self.mod.client_manager:has_unlock('Telescope Lens') then
-      self.consumable_queue:push(TrinketType.TRINKET_TELESCOPE_LENS)
+      self.consumable_queue:push({Variant=PickupVariant.PICKUP_TRINKET, SubType=TrinketType.TRINKET_TELESCOPE_LENS})
   end
   if self.mod.client_manager:has_unlock('Red Key') then
     self.give_queue:push(CollectibleType.COLLECTIBLE_RED_KEY)
@@ -140,6 +140,14 @@ function ItemManager:distribute_items()
       self.mod.client_manager.run_info.to_be_distributed[i] = {}
     end
   end
+
+  if self.mod.client_manager:has_unlock('Ehwaz') then
+    self.consumable_queue:push({Variant=PickupVariant.PICKUP_TAROTCARD, SubType=Card.RUNE_EHWAZ})
+  end
+  if self.mod.client_manager:has_unlock('Soul of Cain') then
+    self.consumable_queue:push({Variant=PickupVariant.PICKUP_TAROTCARD, SubType=Card.CARD_SOUL_CAIN})
+  end
+  
   self:give_items()
 end
 
@@ -172,21 +180,21 @@ function ItemManager:give_item(itemType)
     self.give_queue:push(CollectibleType.COLLECTIBLE_1UP)
   elseif itemType:find('^Random') then
     if itemType:find('Heart$') then
-      self.consumable_queue:push(PickupVariant.PICKUP_HEART)
+      self.consumable_queue:push({Variant=PickupVariant.PICKUP_HEART, SubType=0})
     elseif itemType:find('Bomb$') then
-      self.consumable_queue:push(PickupVariant.PICKUP_BOMB)
+      self.consumable_queue:push({Variant=PickupVariant.PICKUP_BOMB, SubType=0})
     elseif itemType:find('Key$') then
-      self.consumable_queue:push(PickupVariant.PICKUP_KEY)
+      self.consumable_queue:push({Variant=PickupVariant.PICKUP_KEY, SubType=0})
     elseif itemType:find('Coin$') then
-      self.consumable_queue:push(PickupVariant.PICKUP_COIN)
+      self.consumable_queue:push({Variant=PickupVariant.PICKUP_COIN, SubType=0})
     elseif itemType:find('Card$') then
-      self.consumable_queue:push(PickupVariant.PICKUP_TAROTCARD)
+      self.consumable_queue:push({Variant=PickupVariant.PICKUP_TAROTCARD, SubType=0})
     elseif itemType:find('Pill$') then
-      self.consumable_queue:push(PickupVariant.PICKUP_PILL)
+      self.consumable_queue:push({Variant=PickupVariant.PICKUP_PILL, SubType=0})
     elseif itemType:find('Trinket$') then
-      self.consumable_queue:push(PickupVariant.PICKUP_TRINKET)
+      self.consumable_queue:push({Variant=PickupVariant.PICKUP_TRINKET, SubType=0})
     elseif itemType:find('Chest$') then
-      self.consumable_queue:push(PickupVariant.PICKUP_CHEST)
+      self.consumable_queue:push({Variant=PickupVariant.PICKUP_CHEST, SubType=0})
     end
   elseif itemType == 'Progressive Map Upgrade' then
     if self.mod.client_manager:count_received_item(itemType) == 1 then
@@ -195,6 +203,16 @@ function ItemManager:give_item(itemType)
       self.give_queue:push(CollectibleType.COLLECTIBLE_COMPASS)
     elseif self.mod.client_manager:count_received_item(itemType) == 3 then
       self.give_queue:push(CollectibleType.COLLECTIBLE_BLUE_MAP)
+    end
+  elseif itemType == 'Progressive Inventory Upgrade' then
+    if self.mod.client_manager:count_received_item(itemType) == 1 then
+      self.give_queue:push(CollectibleType.COLLECTIBLE_POLYDACTYLY)
+    elseif self.mod.client_manager:count_received_item(itemType) == 2 then
+      self.give_queue:push(CollectibleType.COLLECTIBLE_BELLY_BUTTON)
+    elseif self.mod.client_manager:count_received_item(itemType) == 3 then
+      self.give_queue:push(CollectibleType.COLLECTIBLE_DEEP_POCKETS)
+    elseif self.mod.client_manager:count_received_item(itemType) == 4 then
+      self.give_queue:push(CollectibleType.COLLECTIBLE_SCHOOLBAG)
     end
   elseif itemType:find('^Permanent') then
     for _, player in ipairs(self.mod.player_utils:GetAllActivePlayers()) do
@@ -301,7 +319,7 @@ function ItemManager:give_next()
     if item_id then
       self.mod.dbg('Give Item with id: ' .. tostring(item_id))
       local cfgItem = Isaac.GetItemConfig():GetCollectible(item_id)
-      if cfgItem.Type == ItemType.ITEM_ACTIVE then
+      if cfgItem.Type == ItemType.ITEM_ACTIVE or randomPlayer:GetPlayerType() == PlayerType.PLAYER_CAIN_B then
         local pos = Vector(randomPlayer.Position.X + rng:RandomInt(80) - 40, randomPlayer.Position.Y + rng:RandomInt(80) - 40)
         self.mod.dbg('LOCK ITEM SET TO TRUE!')
         self.lock_item = true
@@ -325,11 +343,7 @@ function ItemManager:give_next()
     
     if consumable then
       local pos = Vector(randomPlayer.Position.X + rng:RandomInt(80) - 40, randomPlayer.Position.Y + rng:RandomInt(80) - 40)
-      if consumable ~= TrinketType.TRINKET_TELESCOPE_LENS then
-        Isaac.Spawn(EntityType.ENTITY_PICKUP, consumable, 0, pos, Vector.Zero, nil)
-      else
-        Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TRINKET, TrinketType.TRINKET_TELESCOPE_LENS, pos, Vector.Zero, nil)
-      end
+      Isaac.Spawn(EntityType.ENTITY_PICKUP, consumable.Variant, consumable.SubType, pos, Vector.Zero, nil)
   
       self.queue_timer = 3
       return
@@ -377,7 +391,8 @@ function ItemManager:on_post_update()
   end
 end
 
-
+---@param player EntityPlayer
+---@param flag CacheFlag
 function ItemManager:on_evaluate_damage(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
 
@@ -385,20 +400,26 @@ function ItemManager:on_evaluate_damage(player, flag)
   player.Damage = player.Damage + 0.6 * mult
 end
 
+---@param player EntityPlayer
+---@param flag CacheFlag
 function ItemManager:on_evaluate_tears(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   
   local mult = self.mod.client_manager:count_received_item('Permanent Tears Up') - self.mod.client_manager.options.start_out_nerfed
-  player.MaxFireDelay = 30/(30/(player.MaxFireDelay+1) + 0.35 * mult)-1
+  player.MaxFireDelay = 30/(math.max(0.2, 30/(player.MaxFireDelay+1) + 0.35 * mult))-1
 end
 
+---@param player EntityPlayer
+---@param flag CacheFlag
 function ItemManager:on_evaluate_range(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   
   local mult = self.mod.client_manager:count_received_item('Permanent Range Up') - self.mod.client_manager.options.start_out_nerfed
-  player.TearRange = player.TearRange + (1.25 * 40) * mult
+  player.TearRange = math.max(80, player.TearRange + 1 * mult * 40)
 end
 
+---@param player EntityPlayer
+---@param flag CacheFlag
 function ItemManager:on_evaluate_speed(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   
@@ -406,6 +427,8 @@ function ItemManager:on_evaluate_speed(player, flag)
   player.MoveSpeed = player.MoveSpeed + 0.15 * mult
 end
 
+---@param player EntityPlayer
+---@param flag CacheFlag
 function ItemManager:on_evaluate_luck(player, flag)
   if not self.mod.client_manager.run_info or not self.mod.client_manager.run_info.is_active then return end
   
