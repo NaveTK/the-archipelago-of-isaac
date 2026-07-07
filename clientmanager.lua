@@ -253,41 +253,50 @@ local forbidden_items_dict = {
   ["Fire Mind"] = CollectibleType.COLLECTIBLE_FIRE_MIND
 }
 
-local character_to_type = {
-  ["Isaac"] = PlayerType.PLAYER_ISAAC,
-  ["Magdalene"] = PlayerType.PLAYER_MAGDALENE,
-  ["Cain"] = PlayerType.PLAYER_CAIN,
-  ["Judas"] = PlayerType.PLAYER_JUDAS,
-  ["???"] = PlayerType.PLAYER_BLUEBABY,
-  ["Eve"] = PlayerType.PLAYER_EVE,
-  ["Samson"] = PlayerType.PLAYER_SAMSON,
-  ["Azazel"] = PlayerType.PLAYER_AZAZEL,
-  ["Lazarus"] = PlayerType.PLAYER_LAZARUS,
-  ["Eden"] = PlayerType.PLAYER_EDEN,
-  ["The Lost"] = PlayerType.PLAYER_THELOST,
-  ["Lilith"] = PlayerType.PLAYER_LILITH,
-  ["Keeper"] = PlayerType.PLAYER_KEEPER,
-  ["Apollyon"] = PlayerType.PLAYER_APOLLYON,
-  ["The Forgotten"] = PlayerType.PLAYER_THEFORGOTTEN,
-  ["Bethany"] = PlayerType.PLAYER_BETHANY,
-  ["Jacob & Esau"] = PlayerType.PLAYER_JACOB,
-  ["Tainted Isaac"] = PlayerType.PLAYER_ISAAC_B,
-  ["Tainted Magdalene"] = PlayerType.PLAYER_MAGDALENE_B,
-  ["Tainted Cain"] = PlayerType.PLAYER_CAIN_B,
-  ["Tainted Judas"] = PlayerType.PLAYER_JUDAS_B,
-  ["Tainted ???"] = PlayerType.PLAYER_BLUEBABY_B,
-  ["Tainted Eve"] = PlayerType.PLAYER_EVE_B,
-  ["Tainted Samson"] = PlayerType.PLAYER_SAMSON_B,
-  ["Tainted Azazel"] = PlayerType.PLAYER_AZAZEL_B,
-  ["Tainted Lazarus"] = PlayerType.PLAYER_LAZARUS_B,
-  ["Tainted Eden"] = PlayerType.PLAYER_EDEN_B,
-  ["Tainted Lost"] = PlayerType.PLAYER_THELOST_B,
-  ["Tainted Lilith"] = PlayerType.PLAYER_LILITH_B,
-  ["Tainted Keeper"] = PlayerType.PLAYER_KEEPER_B,
-  ["Tainted Apollyon"] = PlayerType.PLAYER_APOLLYON_B,
-  ["Tainted Forgotten"] = PlayerType.PLAYER_THEFORGOTTEN_B,
-  ["Tainted Bethany"] = PlayerType.PLAYER_BETHANY_B,
-  ["Tainted Jacob"] = PlayerType.PLAYER_JACOB_B,
+
+local type_to_character = {
+  [PlayerType.PLAYER_POSSESSOR] = "Isaac",
+  [PlayerType.PLAYER_ISAAC] = "Isaac",
+  [PlayerType.PLAYER_MAGDALENE] = "Magdalene",
+  [PlayerType.PLAYER_CAIN] = "Cain",
+  [PlayerType.PLAYER_JUDAS] = "Judas",
+  [PlayerType.PLAYER_BLACKJUDAS] = "Judas",
+  [PlayerType.PLAYER_BLUEBABY] = "???",
+  [PlayerType.PLAYER_EVE] = "Eve",
+  [PlayerType.PLAYER_SAMSON] = "Samson",
+  [PlayerType.PLAYER_AZAZEL] = "Azazel",
+  [PlayerType.PLAYER_LAZARUS] = "Lazarus",
+  [PlayerType.PLAYER_LAZARUS2] = "Lazarus",
+  [PlayerType.PLAYER_EDEN] = "Eden",
+  [PlayerType.PLAYER_THELOST] = "The Lost",
+  [PlayerType.PLAYER_LILITH] = "Lilith",
+  [PlayerType.PLAYER_KEEPER] = "Keeper",
+  [PlayerType.PLAYER_APOLLYON] = "Apollyon",
+  [PlayerType.PLAYER_THEFORGOTTEN] = "The Forgotten",
+  [PlayerType.PLAYER_THESOUL] = "The Forgotten",
+  [PlayerType.PLAYER_BETHANY] = "Bethany",
+  [PlayerType.PLAYER_JACOB] = "Jacob & Esau",
+  [PlayerType.PLAYER_ESAU] = "Jacob & Esau",
+  [PlayerType.PLAYER_ISAAC_B] = "Tainted Isaac",
+  [PlayerType.PLAYER_MAGDALENE_B] = "Tainted Magdalene",
+  [PlayerType.PLAYER_CAIN_B] = "Tainted Cain",
+  [PlayerType.PLAYER_JUDAS_B] = "Tainted Judas",
+  [PlayerType.PLAYER_BLUEBABY_B] = "Tainted ???",
+  [PlayerType.PLAYER_EVE_B] = "Tainted Eve",
+  [PlayerType.PLAYER_SAMSON_B] = "Tainted Samson",
+  [PlayerType.PLAYER_AZAZEL_B] = "Tainted Azazel",
+  [PlayerType.PLAYER_LAZARUS_B] = "Tainted Lazarus",
+  [PlayerType.PLAYER_LAZARUS2_B] = "Tainted Lazarus",
+  [PlayerType.PLAYER_EDEN_B] = "Tainted Eden",
+  [PlayerType.PLAYER_THELOST_B] = "Tainted Lost",
+  [PlayerType.PLAYER_LILITH_B] = "Tainted Lilith",
+  [PlayerType.PLAYER_KEEPER_B] = "Tainted Keeper",
+  [PlayerType.PLAYER_APOLLYON_B] = "Tainted Apollyon",
+  [PlayerType.PLAYER_THEFORGOTTEN_B] = "Tainted Forgotten",
+  [PlayerType.PLAYER_THESOUL_B] = "Tainted Forgotten",
+  [PlayerType.PLAYER_BETHANY_B] = "Tainted Bethany",
+  [PlayerType.PLAYER_JACOB_B] = "Tainted Jacob",
+  [PlayerType.PLAYER_JACOB2_B] = "Tainted Jacob"
 }
 
 ---@param playerType PlayerType
@@ -296,9 +305,10 @@ local character_to_type = {
 function ClientManager:isValidCharacterForBoss(playerType, boss)
   if not self.goal_characters then return true end
   if not self.goal_characters[boss] then return true end
+  if #self.goal_characters[boss] == 0 then return true end
   for _, character in ipairs(self.goal_characters[boss]) do
     self.mod.dbg("Checking character " .. character .. " for boss " .. boss .. " against player type " .. tostring(playerType))
-    if character_to_type[character] == playerType then
+    if character == type_to_character[playerType] then
       return true
     end
   end
