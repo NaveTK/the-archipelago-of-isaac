@@ -506,10 +506,23 @@ function ProgressionManager:room_cleared()
   end
 end
 
+local function getDimension(roomDesc)
+  -- 0: main dimension
+  -- 1: secondary dimension, used by downpour mirror dimension and mines escape sequence
+  -- 2: death certificate dimension
+  for i = 0, 2 do
+    if GetPtrHash(roomDesc) == GetPtrHash(Game():GetLevel():GetRoomByIdx(roomDesc.SafeGridIndex, i)) then
+      return i
+    end
+  end
+  return -1
+end
+
 local ap_item_id = Isaac.GetItemIdByName('AP Item')
 
 ---@param pickup EntityPickup
 function ProgressionManager:on_pickup_init(pickup)
+  if getDimension(Game():GetLevel():GetCurrentRoomDesc()) == 2 then return end
   self.mod.dbg('Pickup Init: ' .. tostring(pickup.Type) .. '.' .. tostring(pickup.Variant) .. '.' .. tostring(pickup.SubType))
   self.mod.dbg(tostring(pickup.Touched))
   if pickup.Type == EntityType.ENTITY_PICKUP and pickup.Variant == PickupVariant.PICKUP_COLLECTIBLE then

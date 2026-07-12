@@ -112,16 +112,16 @@ function ItemManager:init_new_run()
   end
 
   if self.mod.client_manager:has_unlock('We Need To Go Deeper!') then
-    self.give_queue:push(CollectibleType.COLLECTIBLE_WE_NEED_TO_GO_DEEPER)
+    self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_WE_NEED_TO_GO_DEEPER, FromPool=false})
   end
   if self.mod.client_manager:has_unlock('Undefined') then
-    self.give_queue:push(CollectibleType.COLLECTIBLE_UNDEFINED)
+    self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_UNDEFINED, FromPool=false})
   end
   if self.mod.client_manager:has_unlock('Telescope Lens') then
       self.consumable_queue:push({Variant=PickupVariant.PICKUP_TRINKET, SubType=TrinketType.TRINKET_TELESCOPE_LENS})
   end
   if self.mod.client_manager:has_unlock('Red Key') then
-    self.give_queue:push(CollectibleType.COLLECTIBLE_RED_KEY)
+    self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_RED_KEY, FromPool=false})
   end
 
   if self.mod.client_manager.options.start_out_nerfed > 0 then
@@ -177,7 +177,7 @@ function ItemManager:give_item(itemType)
   elseif itemType == 'Treasure Room Item' then
     self:queue_item_from_pool(ItemPoolType.POOL_TREASURE)
   elseif itemType == '1-UP' then
-    self.give_queue:push(CollectibleType.COLLECTIBLE_1UP)
+    self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_1UP, FromPool=false})
   elseif itemType:find('^Random') then
     if itemType:find('Heart$') then
       self.consumable_queue:push({Variant=PickupVariant.PICKUP_HEART, SubType=0})
@@ -198,21 +198,21 @@ function ItemManager:give_item(itemType)
     end
   elseif itemType == 'Progressive Map Upgrade' then
     if self.mod.client_manager:count_received_item(itemType) == 1 then
-      self.give_queue:push(CollectibleType.COLLECTIBLE_TREASURE_MAP)
+      self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_TREASURE_MAP, FromPool=false})
     elseif self.mod.client_manager:count_received_item(itemType) == 2 then
-      self.give_queue:push(CollectibleType.COLLECTIBLE_COMPASS)
+      self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_COMPASS, FromPool=false})
     elseif self.mod.client_manager:count_received_item(itemType) == 3 then
-      self.give_queue:push(CollectibleType.COLLECTIBLE_BLUE_MAP)
+      self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_BLUE_MAP, FromPool=false})
     end
   elseif itemType == 'Progressive Inventory Upgrade' then
     if self.mod.client_manager:count_received_item(itemType) == 1 then
-      self.give_queue:push(CollectibleType.COLLECTIBLE_POLYDACTYLY)
+      self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_POLYDACTYLY, FromPool=false})
     elseif self.mod.client_manager:count_received_item(itemType) == 2 then
-      self.give_queue:push(CollectibleType.COLLECTIBLE_BELLY_BUTTON)
+      self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_BELLY_BUTTON, FromPool=false})
     elseif self.mod.client_manager:count_received_item(itemType) == 3 then
-      self.give_queue:push(CollectibleType.COLLECTIBLE_DEEP_POCKETS)
+      self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_DEEP_POCKETS, FromPool=false})
     elseif self.mod.client_manager:count_received_item(itemType) == 4 then
-      self.give_queue:push(CollectibleType.COLLECTIBLE_SCHOOLBAG)
+      self.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_SCHOOLBAG, FromPool=false})
     end
   elseif itemType:find('^Permanent') then
     for _, player in ipairs(self.mod.player_utils:GetAllActivePlayers()) do
@@ -309,32 +309,33 @@ function ItemManager:queue_item_from_pool(poolType)
   while valueInList(itemId, self.mod.client_manager.forbidden_items) do
     itemId = pool:GetCollectible(poolType, true, rng:Next())
   end
-  self.give_queue:push(itemId)
+  self.give_queue:push({Collectible=itemId, FromPool=true})
 end
 
 function ItemManager:give_next()  
   local randomPlayer = self.mod.player_utils:GetRandomPlayer()
   if self.give_queue.size > 0 then
-    local item_id = self.give_queue:pop()
-    if item_id then
-      self.mod.dbg('Give Item with id: ' .. tostring(item_id))
-      local cfgItem = Isaac.GetItemConfig():GetCollectible(item_id)
-      if cfgItem.Type == ItemType.ITEM_ACTIVE or randomPlayer:GetPlayerType() == PlayerType.PLAYER_CAIN_B then
+    local item = self.give_queue:pop()
+    if item then
+      self.mod.dbg('Give Item with id: ' .. tostring(item.Collectible))
+      local cfgItem = Isaac.GetItemConfig():GetCollectible(item.Collectible)
+      if cfgItem.Type == ItemType.ITEM_ACTIVE or (randomPlayer:GetPlayerType() == PlayerType.PLAYER_CAIN_B and item.FromPool == true) or randomPlayer:GetPlayerType() == PlayerType.PLAYER_ISAAC_B then
         local pos = Vector(randomPlayer.Position.X + rng:RandomInt(80) - 40, randomPlayer.Position.Y + rng:RandomInt(80) - 40)
         self.mod.dbg('LOCK ITEM SET TO TRUE!')
         self.lock_item = true
-        Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item_id, pos, Vector.Zero, nil)
+        Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item.Collectible, pos, Vector.Zero, nil)
       else
-        randomPlayer:AnimateCollectible(item_id, 'Pickup', 'PlayerPickupSparkle')
+        randomPlayer:AnimateCollectible(item.Collectible, 'Pickup', 'PlayerPickupSparkle')
         randomPlayer:QueueItem(cfgItem, 0, false, false, 0)
+        randomPlayer:FlushQueueItem()
       end
-      if item_id == CollectibleType.COLLECTIBLE_1UP then
+      if item == CollectibleType.COLLECTIBLE_1UP then
         SFXManager():Play(SoundEffect.SOUND_1UP)
       else
         SFXManager():Play(SoundEffect.SOUND_POWERUP1)
       end
       --Game():GetHUD():ShowItemText(player, cfgItem, true)
-      self.queue_timer = 15
+      self.queue_timer = math.max(3, 15 - self.give_queue.size)
       return
     end
   end
@@ -345,7 +346,7 @@ function ItemManager:give_next()
       local pos = Vector(randomPlayer.Position.X + rng:RandomInt(80) - 40, randomPlayer.Position.Y + rng:RandomInt(80) - 40)
       Isaac.Spawn(EntityType.ENTITY_PICKUP, consumable.Variant, consumable.SubType, pos, Vector.Zero, nil)
   
-      self.queue_timer = 3
+      self.queue_timer = math.max(1, 3 - self.consumable_queue.size // 10)
       return
     end
   end
@@ -376,7 +377,7 @@ function ItemManager:give_next()
     elseif trap == 'Wavy Cap Trap' then
       randomPlayer:UseActiveItem(CollectibleType.COLLECTIBLE_WAVY_CAP, UseFlag.USE_NOANIM)
     end
-    self.queue_timer = 3
+    self.queue_timer = math.max(1, 3 - self.trap_queue.size // 5)
   end
 end
 

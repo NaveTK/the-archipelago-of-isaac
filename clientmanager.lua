@@ -202,7 +202,7 @@ function ClientManager:add_available_item(item, notification)
     if item_name:find('Unlock$') then
       self.mod.notification_manager:show_fortune(item_name .. 'ed', sub)
       if item_name == 'We Need To Go Deeper! Unlock' then
-        self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_WE_NEED_TO_GO_DEEPER)
+        self.mod.item_manager.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_WE_NEED_TO_GO_DEEPER, FromPool=false})
         self.mod.location_manager:recalculate_location_icons()
       end
       if item_name == 'Ehwaz Unlock' then
@@ -210,15 +210,15 @@ function ClientManager:add_available_item(item, notification)
         self.mod.location_manager:recalculate_location_icons()
       end
       if item_name == 'Undefined Unlock' then
-        self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_UNDEFINED)
+        self.mod.item_manager.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_UNDEFINED, FromPool=false})
         self.mod.location_manager:recalculate_location_icons()
       end
       if item_name == 'Telescope Lens Unlock' then
-        self.mod.item_manager.consumable_queue:push(TrinketType.TRINKET_TELESCOPE_LENS)
+        self.mod.item_manager.consumable_queue:push({Variant=PickupVariant.PICKUP_TRINKET, SubType=TrinketType.TRINKET_TELESCOPE_LENS})
         self.mod.location_manager:recalculate_location_icons()
       end
       if item_name == 'Red Key Unlock' then
-        self.mod.item_manager.give_queue:push(CollectibleType.COLLECTIBLE_RED_KEY)
+        self.mod.item_manager.give_queue:push({Collectible=CollectibleType.COLLECTIBLE_RED_KEY, FromPool=false})
         self.mod.location_manager:recalculate_location_icons()
       end
       if item_name == 'Soul of Cain Unlock' then
@@ -389,6 +389,14 @@ function ClientManager:process_mod_command(cmd)
     end
     self.mod.item_manager:give_items()
   end
+  if cmd.type == "CheckedLocation" then
+    local locations = cmd.payload
+    self.mod.dbg("Locations: " ..  tostring(locations))
+    for _, location in ipairs(locations) do
+      self.mod.dbg(tostring(location))
+      self:check_location(location)
+    end
+  end
   if cmd.type == "HintableLocations" then
     self.hintable_locations = cmd.payload
   end
@@ -436,6 +444,15 @@ function ClientManager:is_missing(id)
     return valueInList(id, self.missing_locations)
   end
   return false
+end
+
+---@param id integer
+function ClientManager:check_location(id)
+    if self:is_missing(id) then
+      removeValueFromList(id, self.missing_locations)
+      table.insert(self.checked_locations, id)
+      self.mod.location_manager:recalculate_location_icons()
+    end
 end
 
 ---@param names string[]
@@ -578,7 +595,7 @@ function ClientManager:on_post_render()
   if self.state == "Connected" then
     Isaac.RenderScaledText('Connected', 2, 2, 0.5, 0.5, 0, 1, 0, 1)
     local offset = Isaac.GetTextWidth('Connected') * 0.5 + 4
-    if not Isaac.GetItemConfig():GetCollectible(CollectibleType.COLLECTIBLE_POLAROID):IsAvailable() or not Isaac.GetItemConfig():GetCollectible(CollectibleType.COLLECTIBLE_NEGATIVE):IsAvailable() then
+    if Game():GetLevel():GetStage() == LevelStage.STAGE1_1 and (not Isaac.GetItemConfig():GetCollectible(CollectibleType.COLLECTIBLE_POLAROID):IsAvailable() or not Isaac.GetItemConfig():GetCollectible(CollectibleType.COLLECTIBLE_NEGATIVE):IsAvailable()) then
       Isaac.RenderScaledText('Insufficient progression detected! (Archipelago is meant to be played on a save file that has all paths to the endgame bosses unlocked.)', offset + 2, 2, 0.5, 0.5, 1, 1, 0, 1)
     elseif Game():GetVictoryLap() > 0 then
       Isaac.RenderScaledText('(Checks are disabled during Victory Laps)', offset + 2, 2, 0.5, 0.5, 1, 1, 0, 1)
