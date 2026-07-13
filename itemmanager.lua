@@ -147,6 +147,9 @@ function ItemManager:distribute_items()
   if self.mod.client_manager:has_unlock('Soul of Cain') then
     self.consumable_queue:push({Variant=PickupVariant.PICKUP_TAROTCARD, SubType=Card.CARD_SOUL_CAIN})
   end
+  if self.mod.client_manager:has_unlock('Cracked Key') then
+    self.consumable_queue:push({Variant=PickupVariant.PICKUP_TAROTCARD, SubType=Card.CARD_CRACKED_KEY})
+  end
   
   self:give_items()
 end

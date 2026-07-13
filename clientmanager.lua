@@ -225,6 +225,10 @@ function ClientManager:add_available_item(item, notification)
         self.mod.item_manager.consumable_queue:push({Variant=PickupVariant.PICKUP_TAROTCARD, SubType=Card.CARD_SOUL_CAIN})
         self.mod.location_manager:recalculate_location_icons()
       end
+      if item_name == 'Cracked Key Unlock' then
+        self.mod.item_manager.consumable_queue:push({Variant=PickupVariant.PICKUP_TAROTCARD, SubType=Card.CARD_CRACKED_KEY})
+        self.mod.location_manager:recalculate_location_icons()
+      end
       self.mod.progression_manager:check_special_exits()
     else
       self.mod.notification_manager:show_message(item_name, sub)

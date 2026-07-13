@@ -339,6 +339,7 @@ function LocationManager:recalculate_location_icons()
   self.location_icons = {}
   local locations = self.mod.client_manager:get_floor_locations(self.mod.progression_manager:get_current_stage_name(), self:get_current_chapter_name())
   for _, location in ipairs(locations) do
+    if location.completed then goto continue end
     self.mod.dbg('Recalculating icon for location: ' .. location.name .. ', completed: ' .. tostring(location.completed))
     local name, completed = location.name, location.completed
     if name:find("^Item") then
@@ -359,6 +360,8 @@ function LocationManager:recalculate_location_icons()
       elseif self.mod.client_manager.options.ultra_secret_room == 3 and not self.mod.client_manager:has_unlock("Red Key") then
         postfix = '_Locked'
       elseif self.mod.client_manager.options.ultra_secret_room == 4 and not self.mod.client_manager:has_unlock("Soul of Cain") then
+        postfix = '_Locked'
+      elseif self.mod.client_manager.options.ultra_secret_room == 5 and not self.mod.client_manager:has_unlock("Cracked Key") then
         postfix = '_Locked'
       end
     end
@@ -398,6 +401,8 @@ function LocationManager:recalculate_location_icons()
 
     icon:Play("Idle", true)
     table.insert(self.location_icons, icon)
+
+    ::continue::
   end
 end
 
