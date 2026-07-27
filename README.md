@@ -28,3 +28,5 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 
 ### Bugs
 - [ ] Lost soul sometimes gives rewards even if it died last floor
+
+- [ ] Vaults in chapter 5
