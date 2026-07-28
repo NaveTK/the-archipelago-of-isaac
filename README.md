@@ -21,10 +21,11 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 
 - [ ] Trap Link
 - [ ] Ring Link
+- [ ] Damage Link
 - [ ] Manifest Adaption
 - [ ] Broken Hearts as deathlink option
 - [ ] Change deathlink severity in client
-- [ ] CLI args
+- [x] ~~CLI args~~
 
 ### Bugs
 - [ ] Lost soul sometimes gives rewards even if it died last floor
