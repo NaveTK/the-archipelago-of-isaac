@@ -31,3 +31,4 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Lost soul sometimes gives rewards even if it died last floor
 
 - [ ] Vaults in chapter 5
+- [ ] Items aren't distributed evenly across both characters for Tainted Lazarus
