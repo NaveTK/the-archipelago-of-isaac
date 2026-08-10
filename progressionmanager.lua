@@ -34,6 +34,7 @@ function ProgressionManager:init_new_run()
         unspawned_locations = {},
         discarded_items = {}
     }
+    self.mod.client_manager.block_death_link = 0
     self.mod.item_manager:init_new_run()
     self.mod.client_manager:update_run_info()
     self:on_new_level()
