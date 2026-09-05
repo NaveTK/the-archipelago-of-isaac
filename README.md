@@ -33,3 +33,4 @@ This mod enables the ability to connect to an Archipelago MultiWorld.
 - [ ] Vaults in chapter 5
 - [ ] Items aren't distributed evenly across both characters for Tainted Lazarus
 - [x] ~~Deathlink not triggering~~
+- [ ] --nogui doesn't work
